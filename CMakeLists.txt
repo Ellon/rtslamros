@@ -89,11 +89,21 @@ catkin_package(
 ## Build ##
 ###########
 
+## Add cmake modules from the package
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake_modules)
+
+## Look for Jafar library
+find_package(Jafar)
+if(NOT JAFAR_FOUND)
+ message(FATAL_ERROR "   -- Jafar not found! Please install it before continuing.")
+endif(NOT JAFAR_FOUND)
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${JAFAR_INDLUCE_DIR}
 )
 
 ## Declare a cpp library
@@ -102,16 +112,16 @@ include_directories(
 # )
 
 ## Declare a cpp executable
-# add_executable(rtslam-ros_node src/rtslam-ros_node.cpp)
+add_executable(rtslam-ros_node src/rtslam-ros_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 # add_dependencies(rtslam-ros_node rtslam-ros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(rtslam-ros_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(rtslam-ros_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
