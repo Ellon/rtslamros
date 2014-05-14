@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>rtslam-ros</name>
+  <name>rtslamros</name>
   <version>0.0.0</version>
-  <description>The rtslam-ros package</description>
+  <description>The rtslamros package</description>
 
   <author email="emendes@laas.fr">Ellon Paiva Mendes</author>
   <maintainer email="emendes@laas.fr">Ellon Paiva Mendes</maintainer>

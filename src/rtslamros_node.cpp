@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 
-#include <rtslam-ros/main.hpp>
+#include <rtslamros/main.hpp>
 
 /**
  * This tutorial demonstrates simple receipt of messages over the ROS system.
