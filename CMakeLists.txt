@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(rtslam-ros)
 
+## Add cmake modules from the package
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake_modules)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -10,8 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serialization)
 
+## Look for Jafar library
+find_package(Jafar REQUIRED)
+
+## Look for OpenCV
+find_package(OpenCV REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -89,21 +97,14 @@ catkin_package(
 ## Build ##
 ###########
 
-## Add cmake modules from the package
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake_modules)
-
-## Look for Jafar library
-find_package(Jafar)
-if(NOT JAFAR_FOUND)
- message(FATAL_ERROR "   -- Jafar not found! Please install it before continuing.")
-endif(NOT JAFAR_FOUND)
-
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  include
+  ${Jafar_INCLUDE_DIR}
+  ${Jafar_INCLUDE_DIR}/jafar
   ${catkin_INCLUDE_DIRS}
-  ${JAFAR_INDLUCE_DIR}
 )
 
 ## Declare a cpp library
@@ -120,7 +121,16 @@ add_executable(rtslam-ros_node src/rtslam-ros_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(rtslam-ros_node
+  ${Jafar_KERNEL_LIBRARY}
+  ${Jafar_JMATH_LIBRARY}
+  ${Jafar_CORREL_LIBRARY}
+  ${Jafar_GDHE_LIBRARY}
+  ${Jafar_IMAGE_LIBRARY}
+  ${Jafar_QDISPLAY_LIBRARY}
+  ${Jafar_RTSLAM_LIBRARY}
+  ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 
 #############

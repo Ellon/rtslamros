@@ -1,7 +1,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 
-// #include <jafar/rtslam/robotInertial.hpp>
+#include <rtslam-ros/main.hpp>
 
 /**
  * This tutorial demonstrates simple receipt of messages over the ROS system.
