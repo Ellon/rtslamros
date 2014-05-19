@@ -15,16 +15,17 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serialization)
 
-## Look for Jafar library
+## Look for Jafar library 
+## (TODO: improve FindJafar.cmake to find modules as components)
 find_package(Jafar REQUIRED)
 
-## Look for GDHE library
+## Look for GDHE library (TODO: Change it for optional)
 find_package(GDHE REQUIRED)
 
 ## Look for OpenCV
 find_package(OpenCV REQUIRED)
 
-## Look for Qt4 libs
+## Look for Qt4 libs (TODO: Change it for optional)
 find_package(Qt4 REQUIRED)
 
 
