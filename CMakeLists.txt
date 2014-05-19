@@ -124,6 +124,7 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(rtslamros_node src/rtslamros_node.cpp)
+add_executable(jafardemo_node src/jafardemo_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -139,6 +140,21 @@ target_link_libraries(rtslamros_node
   ${Jafar_QDISPLAY_LIBRARY}
   ${Jafar_RTSLAM_LIBRARY}
   ${GDHE_LIBRARY}
+  ${OpenCV_LIBS}
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
+target_link_libraries(jafardemo_node
+  ${Jafar_KERNEL_LIBRARY}
+  ${Jafar_JMATH_LIBRARY}
+  ${Jafar_CORREL_LIBRARY}
+  ${Jafar_GDHE_LIBRARY}
+  ${Jafar_IMAGE_LIBRARY}
+  ${Jafar_QDISPLAY_LIBRARY}
+  ${Jafar_RTSLAM_LIBRARY}
+  ${GDHE_LIBRARY}
+  ${QT_LIBRARIES}
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
