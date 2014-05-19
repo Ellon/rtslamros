@@ -1,10 +1,11 @@
 /**
  * \file main.hpp
  *
- * Simple version from jafar/rtslam/main.hpp file, as from it was in
+ * Version from main.hpp which uses MTI and Camera sensors from ros
+ * topics. Based on jafar/rtslam/main.hpp, as from it was in
  * 14/05/2014.
  *
- * \author Ellon P. Mendes <ellon.paiva@laas.fr>
+ * \author Ellon P. Mendes <emendes@laas.fr>
  * \date 14/05/2014
  *
  */
@@ -28,6 +29,25 @@
  * This allows to use Dala "atrv" robot model instead of camera (default) model in the Gdhe view display
  */
 #define ATRV 0
+
+/*
+ * STATUS: working fine, use it
+ * This allows to have 0% cpu used for waiting/idle
+ */
+//#define EVENT_BASED_RAW 1 // always enabled now
+
+/*
+ * STATUS: in progress, do not use for now
+ * This allows to track landmarks longer by updating the reference patch when
+ * the landmark is not detected anymore and the point of view has changed
+ * significantly enough
+ * The problem is that the correlation is not robust enough in a matching
+ * (opposed to tracking) context, and it can provoke matching errors with a
+ * progressive appearance drift.
+ * Also decreasing perfs by 10%, probably because we save a view at each obs,
+ * or maybe it just because of the different random process
+ */
+//#define MULTIVIEW_DESCRIPTOR 1 // moved in config file
 
 /*
  * STATUS: in progress, do not use for now
@@ -953,6 +973,8 @@ bool demo_slam_init()
 			hardEst1 = hardEst1_;
 */		} else
 		{
+		  /** CHANGE_HERE_TO_ROS
+		   */
 			boost::shared_ptr<hardware::HardwareSensorMti> hardEst1_(new hardware::HardwareSensorMti(
 				&estimatordata_condition, configSetup.MTI_DEVICE, intOpts[iTrigger], floatOpts[fFreq], floatOpts[fShutter], 1024, mode, strOpts[sDataPath], loggerTask.get()));
 			trigger_construction_date = kernel::Clock::getTime();
