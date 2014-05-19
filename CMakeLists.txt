@@ -18,8 +18,15 @@ find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serializat
 ## Look for Jafar library
 find_package(Jafar REQUIRED)
 
+## Look for GDHE library
+find_package(GDHE REQUIRED)
+
 ## Look for OpenCV
 find_package(OpenCV REQUIRED)
+
+## Look for Qt4 libs
+find_package(Qt4 REQUIRED)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -104,6 +111,9 @@ include_directories(
   include
   ${Jafar_INCLUDE_DIR}
   ${Jafar_INCLUDE_DIR}/jafar
+  ${GDHE_INCLUDE_DIR}
+  ${GDHE_INCLUDE_DIR}/gdhe
+  ${QT_INCLUDES}
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -128,6 +138,7 @@ target_link_libraries(rtslamros_node
   ${Jafar_IMAGE_LIBRARY}
   ${Jafar_QDISPLAY_LIBRARY}
   ${Jafar_RTSLAM_LIBRARY}
+  ${GDHE_LIBRARY}
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
