@@ -22,3 +22,10 @@
 *.exe
 *.out
 *.app
+
+# QtCreator project files
+rtslamros.config
+rtslamros.creator
+rtslamros.creator.user
+rtslamros.files
+rtslamros.includes
