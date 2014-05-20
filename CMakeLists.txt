@@ -10,6 +10,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake_modules)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -124,6 +125,7 @@ include_directories(
 # )
 add_library(librtslamros
   src/hardwareSensorMtiRos.cpp
+  src/hardwareSensorCameraRos.cpp
 )
 
 
