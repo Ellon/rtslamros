@@ -122,6 +122,10 @@ include_directories(
 # add_library(rtslamros
 #   src/${PROJECT_NAME}/rtslamros.cpp
 # )
+add_library(librtslamros
+  src/hardwareSensorMtiRos.cpp
+)
+
 
 ## Declare a cpp executable
 add_executable(rtslamros_node src/rtslamros_node.cpp)
@@ -133,6 +137,7 @@ add_executable(jafardemo_node src/jafardemo_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(rtslamros_node
+  librtslamros
   ${Jafar_KERNEL_LIBRARY}
   ${Jafar_JMATH_LIBRARY}
   ${Jafar_CORREL_LIBRARY}
