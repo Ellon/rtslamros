@@ -55,7 +55,6 @@ void HardwareSensorMtiRos::preloadTask(void)
 
 	if (mode == mOnlineDump) log.openWrite("MTI", dump_path, 0, reading.data.size(), loggerTask);
 	if (mode == mOffline) log.openRead("MTI", dump_path, format, size);
-	if (mode == mOffline) JFR_WARNING("HardwareSensorMtiRos: Offline mode temporary changed to Online mode from ROS topic")
 
 	ros::Subscriber sub = nh.subscribe("/uav0/imu", 1024, &HardwareSensorMtiRos::callback, this);
 
@@ -63,12 +62,10 @@ void HardwareSensorMtiRos::preloadTask(void)
 	{
 		if (mode == mOffline)
 		{
-			if(imu_callback_queue.callOne(ros::WallDuration()) != ros::CallbackQueue::Called) continue;
-
-			//bool eof = log.read(reading.data); // reads and puts it into reading.data. returns true if eof
+			bool eof = log.read(reading.data);
 			boost::unique_lock<boost::mutex> l(mutex_data);
 			if (isFull(true)) cond_offline_full.notify_all();
-			//if (eof) { no_more_data = true; cond_offline_full.notify_all(); stopping = true; }
+			if (eof) { no_more_data = true; cond_offline_full.notify_all(); stopping = true; }
 			while (isFull(true) && !stopping) cond_offline_freed.wait(l);
 			if (stopping) break;
 		} else
