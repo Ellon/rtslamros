@@ -118,7 +118,12 @@ void HardwareSensorCameraRos::preloadTask(void)
 		HardwareSensorCamera(condition, cam_id, imgSize, dump_path)
 	{
 		nh.setCallbackQueue(&camera_callback_queue);
+	}
 
+	HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, int bufferSize, kernel::LoggerTask *loggerTask):
+		HardwareSensorCamera(condition, mode, cam_id, bufferSize, loggerTask)
+	{
+		nh.setCallbackQueue(&camera_callback_queue);
 	}
 
 

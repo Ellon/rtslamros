@@ -49,10 +49,11 @@ public:
 		Same as before but assumes that mode=2, and doesn't need a camera
 		*/
 	HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, int cam_id, cv::Size imgSize, std::string dump_path = ".");
+	HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, int bufferSize, kernel::LoggerTask *loggerTask);
+
 
 	~HardwareSensorCameraRos();
 
-	void assessFirstImage(double originTrigger = -1);
 	virtual void start();
 	virtual void showInfos()
 	{
