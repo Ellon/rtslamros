@@ -105,13 +105,13 @@ HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condi
 	addQuantity(qMag);
 	initData();
 
-	if (mode == mOnline || mode == mOnlineDump)
-	{
-		JFR_ERROR(RtslamException, rtslam::RtslamException::GENERIC_ERROR, "HardwareSensorMtiRos: Online and OnlineDump modes are not implemented yet.");
-	} else
-	{
+//	if (mode == mOnline || mode == mOnlineDump)
+//	{
+//		JFR_ERROR(RtslamException, rtslam::RtslamException::GENERIC_ERROR, "HardwareSensorMtiRos: Online and OnlineDump modes are not implemented yet.");
+//	} else
+//	{
 		realFreq = trigger_freq;
-	}
+//	}
 
 	nh.setCallbackQueue(&imu_callback_queue);
 }
