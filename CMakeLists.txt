@@ -17,8 +17,17 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serialization)
 
 ## Look for Jafar library 
-## (TODO: improve FindJafar.cmake to find modules as components)
-find_package(Jafar REQUIRED)
+##   A separation into "REQUIRED (...) COMPONENTS (...)" should be able to separate
+##   optional components from required ones, but it's not so easy to do that.
+find_package(Jafar REQUIRED kernel jmath image correl rtslam COMPONENTS gdhe qdisplay)
+## Set definitions for optional modules
+if(Jafar_GHDE_FOUND)
+  add_definitions(-DHAVE_MODULE_GDHE)
+endif(Jafar_GHDE_FOUND)
+
+if(Jafar_QDISPLAY_FOUND)
+  add_definitions(-DHAVE_MODULE_QDISPLAY)
+endif(Jafar_QDISPLAY_FOUND)
 
 ## Look for GDHE library (TODO: Change it for optional)
 find_package(GDHE REQUIRED)
@@ -109,10 +118,10 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
+
 include_directories(
-  include
-  ${Jafar_INCLUDE_DIR}
-  ${Jafar_INCLUDE_DIR}/jafar
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${Jafar_INCLUDE_DIRS}
   ${GDHE_INCLUDE_DIR}
   ${GDHE_INCLUDE_DIR}/gdhe
   ${QT_INCLUDES}
@@ -140,13 +149,7 @@ add_executable(jafardemo_node src/jafardemo_node.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(rtslamros_node
   librtslamros
-  ${Jafar_KERNEL_LIBRARY}
-  ${Jafar_JMATH_LIBRARY}
-  ${Jafar_CORREL_LIBRARY}
-  ${Jafar_GDHE_LIBRARY}
-  ${Jafar_IMAGE_LIBRARY}
-  ${Jafar_QDISPLAY_LIBRARY}
-  ${Jafar_RTSLAM_LIBRARY}
+  ${Jafar_LIBRARIES}
   ${GDHE_LIBRARY}
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
@@ -154,13 +157,7 @@ target_link_libraries(rtslamros_node
 )
 
 target_link_libraries(jafardemo_node
-  ${Jafar_KERNEL_LIBRARY}
-  ${Jafar_JMATH_LIBRARY}
-  ${Jafar_CORREL_LIBRARY}
-  ${Jafar_GDHE_LIBRARY}
-  ${Jafar_IMAGE_LIBRARY}
-  ${Jafar_QDISPLAY_LIBRARY}
-  ${Jafar_RTSLAM_LIBRARY}
+  ${Jafar_LIBRARIES}
   ${GDHE_LIBRARY}
   ${QT_LIBRARIES}
   ${OpenCV_LIBS}

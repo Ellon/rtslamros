@@ -4,9 +4,6 @@
 #include <fenv.h>
 
 /// @todo Remove these defines from here and set them from CMake
-#define HAVE_MODULE_QDISPLAY
-#define HAVE_MODULE_GDHE
-
 #include <rtslamros/main.hpp>
 
 /**

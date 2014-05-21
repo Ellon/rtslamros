@@ -13,9 +13,6 @@
 
 #include <fenv.h>
 
-#define HAVE_MODULE_QDISPLAY
-#define HAVE_MODULE_GDHE
-
 /// See documentation of these options in demo_suite/demo_slam.cpp
 #include <rtslam/main.hpp>
 
