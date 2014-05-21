@@ -1,3 +1,5 @@
 jafardemo_node --disp-2d=1 --disp-3d=1 --robot=1 --camera=10 --map=0 --render-all=0 --replay=1 --rand-seed=1 --pause=1 --config-setup=@/setup.cfg --config-estimation=@/estimation.cfg --data-path=/home/emendes/workspace/2012-10-17_caylus-rtslam/
 
 catkin_make -DJAFAR_ROOT=~/openrobots -DGDHE_ROOT=~/openrobots -DHAVE_MODULE_QDISPLAY:BOOL=ON -DHAVE_MODULE_GDHE:BOOL=ON
+
+rosrun rtslamros rtslamros_node --disp-2d=0 --disp-3d=0 --robot=1 --camera=10 --map=0 --render-all=0 --replay=0 --rand-seed=1 --pause=0 --config-setup=/home/emendes/workspace/2012-10-17_caylus-rtslam/setup.cfg --config-estimation=/home/emendes/workspace/2012-10-17_caylus-rtslam/estimation.cfg --data-path=/home/emendes/workspace/rtslam-log-test/
