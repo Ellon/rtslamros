@@ -20,23 +20,27 @@ find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serializat
 ##   A separation into "REQUIRED (...) COMPONENTS (...)" should be able to separate
 ##   optional components from required ones, but it's not so easy to do that.
 find_package(Jafar REQUIRED kernel jmath image correl rtslam COMPONENTS gdhe qdisplay)
-## Set definitions for optional modules
-if(Jafar_GHDE_FOUND)
-  add_definitions(-DHAVE_MODULE_GDHE)
-endif(Jafar_GHDE_FOUND)
-
-if(Jafar_QDISPLAY_FOUND)
-  add_definitions(-DHAVE_MODULE_QDISPLAY)
-endif(Jafar_QDISPLAY_FOUND)
 
 ## Look for GDHE library (TODO: Change it for optional)
 find_package(GDHE REQUIRED)
+if(GDHE_FOUND AND Jafar_GHDE_FOUND)
+  add_definitions(-DHAVE_MODULE_GDHE)
+endif(GDHE_FOUND AND Jafar_GHDE_FOUND)
+
+## Look for Viam library (TODO: Change it for optional)
+find_package(Viam REQUIRED)
+if(Viam_FOUND)
+  add_definitions(-DHAVE_VIAM)
+endif(Viam_FOUND)
 
 ## Look for OpenCV
 find_package(OpenCV REQUIRED)
 
 ## Look for Qt4 libs (TODO: Change it for optional)
 find_package(Qt4 REQUIRED)
+if(Qt4_FOUND AND Jafar_QDISPLAY_FOUND)
+  add_definitions(-DHAVE_MODULE_QDISPLAY)
+endif(Qt4_FOUND AND Jafar_QDISPLAY_FOUND)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
