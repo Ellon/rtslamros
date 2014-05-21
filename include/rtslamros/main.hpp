@@ -208,6 +208,7 @@
 
 #include <ros/ros.h>
 #include <rtslamros/hardwareSensorMtiRos.hpp>
+#include <rtslamros/hardwareSensorCameraRos.hpp>
 
 /** ############################################################################
  * #############################################################################
@@ -1307,19 +1308,18 @@ bool demo_slam_init()
 					case 1: crop = VIAM_HW_CROP; break;
 					default: crop = VIAM_HW_FIXED; break;
 				}
-				hardware::hardware_sensor_firewire_ptr_t hardSen11;
+				rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11;
 				for(int itry = 0; itry < 2; ++itry)
 				{
-					hardSen11 = hardware::hardware_sensor_firewire_ptr_t(new hardware::HardwareSensorCameraFirewire(&rawdata_condition, 500,
-						configSetup.CAMERA_DEVICE[c], cv::Size(img_width[c],img_height[c]), configSetup.CAMERA_FORMAT[c], crop, floatOpts[fFreq], intOpts[iTrigger],
-						floatOpts[fShutter], mode, cam_id, load_calib ? configSetup.CAMERA_CALIB[c] : "", strOpts[sDataPath], loggerTask.get()));
-					if (hardSen11->initialized()) break; else std::cerr << "!HardwareSensorCameraFirewire " << hardSen11->id() << " failed to initialize" << (itry != 1 ? ", reset sensor and retry in 1 second." : ".") << std::endl;
+					hardSen11 = rtslamros::hardware::hardware_sensor_camera_ros_ptr_t(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, c+1, cv::Size(img_width[c],img_height[c]),strOpts[sDataPath]));
+//					hardSen11 = rtslamros::hardware::hardware_sensor_camera_ros_ptr_t(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, c+1, 500, loggerTask.get()));
+					if (hardSen11->initialized()) break; else std::cerr << "!HardwareSensorCameraRos " << hardSen11->id() << " failed to initialize" << (itry != 1 ? ", reset sensor and retry in 1 second." : ".") << std::endl;
 					hardSen11.reset();
 					if (itry != 1) sleep(1);
 				}
 				if (!hardSen11)
 				{
-					std::cerr << "!!HardwareSensorCameraFirewire " << cam_id << " failed to start" << (itrya != ntrya-1 ? ", resetting bus and retrying." : ", abandoning.") << std::endl ;
+					std::cerr << "!!HardwareSensorCameraRos " << cam_id << " failed to start" << (itrya != ntrya-1 ? ", resetting bus and retrying." : ", abandoning.") << std::endl ;
 					initialized_cameras = false;
 					for(int cc = 0; cc < c; cc++) if (cams[cc]) cams_built[cc]->setHardwareSensor(hardware::hardware_sensorext_ptr_t());
 					sleep(1);
@@ -1329,14 +1329,14 @@ bool demo_slam_init()
 					break;
 				}
 
-				if (!(intOpts[iReplay] & 1)) hardSen11->assessFirstImage(trigger_construction_date);
+//				if (!(intOpts[iReplay] & 1)) hardSen11->assessFirstImage(trigger_construction_date);
 				hardSen11->setTimingInfos(1.0/hardSen11->getFreq(), 1.0/hardSen11->getFreq());
 				hardSen11->setFilter(filter_div, filter_mods[c]);
 				senPtr11->setHardwareSensor(hardSen11);
 				#else
 				if (intOpts[iReplay] & 1)
 				{
-					hardware::hardware_sensorext_ptr_t hardSen11(new hardware::HardwareSensorCameraFirewire(&rawdata_condition, c+1, cv::Size(img_width[c],img_height[c]),strOpts[sDataPath]));
+					hardware::hardware_sensorext_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, c+1, cv::Size(img_width[c],img_height[c]),strOpts[sDataPath]));
 					senPtr11->setHardwareSensor(hardSen11);
 				} else
 				{
