@@ -99,30 +99,11 @@ void HardwareSensorCameraRos::preloadTask(void)
 	JFR_GLOBAL_CATCH
 }
 
-//	HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, int bufferSize, const std::string &camera_id,
-//		cv::Size size, int format, viam_hwcrop_t crop, double freq, int trigger, double shutter, Mode mode, int cam_id,
-//		std::string calib_file, std::string dump_path, kernel::LoggerTask *loggerTask):
-//		HardwareSensorCamera(condition, mode, cam_id, bufferSize, loggerTask),
-//		callback_img(NULL)
-//	{
-//		if (mode == rtslam::hardware::mOnlineDump && !loggerTask) JFR_ERROR(RtslamException, RtslamException::GENERIC_ERROR, "HardwareSensorCameraRos: you must provide a loggerTask if you want to dump data.");
-//		realFreq = freq;
-//		std::cout << "Camera set to freq " << realFreq << " Hz (external trigger " << trigger << ")" << std::endl;
-
-//		nh.setCallbackQueue(&camera_callback_queue);
-
-//	}
-
-
-	HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, int cam_id, cv::Size imgSize, std::string dump_path):
-		HardwareSensorCamera(condition, cam_id, imgSize, dump_path)
-	{
-		nh.setCallbackQueue(&camera_callback_queue);
-	}
-
-	HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, int bufferSize, kernel::LoggerTask *loggerTask):
+	HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, cv::Size imgSize,
+													 int bufferSize, kernel::LoggerTask *loggerTask,std::string dump_path):
 		HardwareSensorCamera(condition, mode, cam_id, bufferSize, loggerTask)
 	{
+		HardwareSensorCamera::init(mode,dump_path,imgSize);
 		nh.setCallbackQueue(&camera_callback_queue);
 	}
 

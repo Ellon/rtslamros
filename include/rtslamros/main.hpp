@@ -1311,8 +1311,7 @@ bool demo_slam_init()
 				rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11;
 				for(int itry = 0; itry < 2; ++itry)
 				{
-					hardSen11 = rtslamros::hardware::hardware_sensor_camera_ros_ptr_t(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, c+1, cv::Size(img_width[c],img_height[c]),strOpts[sDataPath]));
-//					hardSen11 = rtslamros::hardware::hardware_sensor_camera_ros_ptr_t(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, c+1, 500, loggerTask.get()));
+					hardSen11 = rtslamros::hardware::hardware_sensor_camera_ros_ptr_t(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, c+1, cv::Size(img_width[c],img_height[c]),500,loggerTask.get(),strOpts[sDataPath]));
 					if (hardSen11->initialized()) break; else std::cerr << "!HardwareSensorCameraRos " << hardSen11->id() << " failed to initialize" << (itry != 1 ? ", reset sensor and retry in 1 second." : ".") << std::endl;
 					hardSen11.reset();
 					if (itry != 1) sleep(1);
@@ -1336,7 +1335,7 @@ bool demo_slam_init()
 				#else
 				if (intOpts[iReplay] & 1)
 				{
-					hardware::hardware_sensorext_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, c+1, cv::Size(img_width[c],img_height[c]),strOpts[sDataPath]));
+					hardware::hardware_sensorext_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, c+1, cv::Size(img_width[c],img_height[c]),500,loggerTask.get(),strOpts[sDataPath]));
 					senPtr11->setHardwareSensor(hardSen11);
 				} else
 				{
