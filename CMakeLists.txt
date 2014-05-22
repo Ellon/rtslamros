@@ -145,6 +145,7 @@ add_library(librtslamros
 ## Declare a cpp executable
 add_executable(rtslamros_node src/rtslamros_node.cpp)
 add_executable(jafardemo_node src/jafardemo_node.cpp)
+add_executable(simplertslamros_node src/simplertslamros_node.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -168,6 +169,14 @@ target_link_libraries(jafardemo_node
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
+
+target_link_libraries(simplertslamros_node
+  librtslamros
+  ${Jafar_LIBRARIES}
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
+
 
 #############
 ## Install ##
