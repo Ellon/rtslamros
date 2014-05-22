@@ -54,7 +54,6 @@ public:
 
 	~HardwareSensorCameraRos();
 
-	virtual void start();
 	virtual void showInfos()
 	{
 		double period, delay;

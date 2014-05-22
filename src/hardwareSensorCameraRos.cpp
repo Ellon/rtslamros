@@ -116,16 +116,5 @@ void HardwareSensorCameraRos::preloadTask(void)
 		}
 	}
 
-
-	void HardwareSensorCameraRos::start()
-	{
-		if (mode == rtslam::hardware::mOffline) HardwareSensorCamera::start(); else
-		{
-			if (started) { std::cout << "Warning: HardwareSensorCameraRos " << id() << " has already been started" << std::endl; return; }
-			last_timestamp = kernel::Clock::getTime();
-			started = true;
-		}
-	}
-
 }}}
 
