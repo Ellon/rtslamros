@@ -4,6 +4,7 @@ FIND_PATH(Viam_INCLUDE_DIR viam/viamlib.h
   ${VIAM_ROOT}/include
   $ENV{VIAM_ROOT}/include
   $ENV{VIAM_ROOT}
+  $ENV{ROBOTPKG_BASE}/include
   /usr/local/include
   /usr/include
   /opt/local/include
@@ -19,6 +20,8 @@ FIND_LIBRARY(Viam_LIBRARY
   ${VIAM_ROOT}/lib
   $ENV{VIAM_ROOT}/lib/Debug
   $ENV{VIAM_ROOT}/lib
+  $ENV{ROBOTPKG_BASE}/lib/Debug
+  $ENV{ROBOTPKG_BASE}/lib
   NO_DEFAULT_PATH
   )
 

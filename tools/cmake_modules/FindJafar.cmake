@@ -4,6 +4,7 @@ FIND_PATH(Jafar_INCLUDE_DIR kernel/jafarMacro.hpp
   ${JAFAR_ROOT}/include/jafar
   $ENV{JAFAR_ROOT}/include/jafar
   $ENV{JAFAR_ROOT}
+  $ENV{ROBOTPKG_BASE}/include/jafar
   /usr/local/include
   /usr/include
   /opt/local/include
@@ -43,6 +44,8 @@ FIND_PATH(Jafar_${MYMODULE}_INCLUDE_DIR ${MYMODULELOWER}Exception.hpp
     ${JAFAR_ROOT}/lib
     $ENV{JAFAR_ROOT}/lib/Release
     $ENV{JAFAR_ROOT}/lib
+    $ENV{ROBOTPKG_BASE}/lib/Release
+    $ENV{ROBOTPKG_BASE}/lib
     NO_DEFAULT_PATH
     )
 
