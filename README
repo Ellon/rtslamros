@@ -12,7 +12,7 @@ README - RT-SLAM ROS node
 5) Setup the catkin workspace (See ROS Tutorials)
 6) Put rtslamros directory inside <catkin-workspace-dir>/src
 7) Run 
-      $ catkin_make
+      $ catkin_make -DJAFAR_ROOT=$ROBOTPKG_BASE -DGDHE_ROOT=$ROBOTPKG_BASE -DVIAM_ROOT=$ROBOTPKG_BASE 
    from the catkin workspace directory
 
 Requirements
