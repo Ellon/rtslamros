@@ -41,6 +41,7 @@ void HardwareSensorCameraRos::callback(const sensor_msgs::Image& msg)
 	callback_img->timestamp = msg.header.stamp.toSec();
 	callback_img->arrival = kernel::Clock::getTime();
 
+	if (index == 0) { this->timestamps_correction = callback_img->arrival - callback_img->timestamp; }
 }
 
 
@@ -72,10 +73,10 @@ void HardwareSensorCameraRos::preloadTask(void)
 		callback_img = bufferSpecPtr[buff_write];
 		if(camera_callback_queue.callOne(ros::WallDuration()) != ros::CallbackQueue::Called) continue;
 
-		if (index == 0) { first_image_timestamp = bufferSpecPtr[buff_write]->timestamp; first_image_arrival = bufferSpecPtr[buff_write]->arrival; }
 		if (enabled)
 		{
 			boost::unique_lock<boost::mutex> l(mutex_data);
+			bufferSpecPtr[buff_write]->timestamp += timestamps_correction;
 			update_arrival_delay(bufferSpecPtr[buff_write]->arrival - bufferSpecPtr[buff_write]->timestamp);
 			last_timestamp = bufferSpecPtr[buff_write]->timestamp;
 			if (started) incWritePos(true);

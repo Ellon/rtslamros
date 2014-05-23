@@ -47,6 +47,7 @@ private:
 	double init_ts1, init_ts2;
 
 	void callback(const sensor_msgs::Imu& msg);
+	unsigned index;
 
 public:
 

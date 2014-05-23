@@ -41,8 +41,6 @@ private:
 	virtual void preloadTask(void);
 
 	void init(rtslam::hardware::Mode mode, std::string dump_path, cv::Size imgSize);
-
-	double transmit_date, first_image_timestamp, first_image_arrival;
 public:
 
 	/**
