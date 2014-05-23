@@ -119,8 +119,8 @@ bool ready = false; // Variable that indicates if the extrapolation was initiali
 #define CAMERA_POSE {0.292,0.193,0.108,-90,0,-90} ///< \todo Set camera pose from setup file
 #define CAMERA_INTRINSIC {+3.2703920036560964e+02,+2.4714638294268735e+02,+3.7290284087776149e+02,+3.7271088432359716e+02} ///< \todo Set camera intrinsics from tf
 #define CAMERA_DISTORTION {-2.6188796889984112e-01,+1.2158236902559119e-01,-3.0273706315773623e-02} ///< \todo Set camera distortion from tf
-#define IMG_WIDTH 640 ///< \todo Set image width from tf
-#define IMG_HEIGHT 480 ///< \todo Set image height from tf
+#define IMG_WIDTH 320 ///< \todo Set image width from tf
+#define IMG_HEIGHT 240 ///< \todo Set image height from tf
 
 bool demo_slam_simple_init()
 { JFR_GLOBAL_TRY
