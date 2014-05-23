@@ -1,0 +1,79 @@
+README - RT-SLAM ROS node
+-------------------------
+
+"Quick"start
+
+1) Install robotpkg (See http://robotpkg.openrobots.org)
+2) Clone robotpkg wip (See http://robotpkg.openrobots.org/robotpkg-wip.html)
+3) Install RT-SLAM
+      $ cd $ROBOTPKG_DIR/src/robotpkg/wip/jafar-rtslam/
+      $ make update
+4) Install ROS (See ros.org)
+5) Setup the catkin workspace (See ROS Tutorials)
+6) Put rtslamros directory inside <catkin-workspace-dir>/src
+7) Run 
+      $ catkin_make
+   from the catkin workspace directory
+
+Requirements
+------------
+
+- ROS
+- RT-SLAM and its dependencies
+
+Instalation Notes
+-----------------
+
+You can use robotpkg (http://robotpkg.openrobots.org/) to install
+RT-SLAM and its requirements. RT-SLAM can be found inside the
+"work-in-progress" directory
+(http://robotpkg.openrobots.org/robotpkg-wip.html).
+
+If you want debug symbols you should add the following lines to your
+$ROBOTPKG_BASE/etc/robotpkg.conf:
+   PKG_OPTIONS.jafar-kernel+= debug
+   PKG_OPTIONS.jafar-rtslam+= debug
+before installing rt-slam.
+
+You can also add other optinonal packages by adding the following line
+to your $ROBOTPKG_BASE/etc/robotpkg.conf: 
+   PKG_OPTIONS.jafar-rtslam+= qdisplay gdhe viam MTI posterLib
+
+To install RT-SLAM:
+$] cd $ROBOTPKG_DIR/src/robotpkg/wip/jafar-rtslam/
+$] make update
+
+To install ROS and catkin follow the ROS Tutorials (http://wiki.ros.org/ROS/Tutorials)
+
+Debug Notes
+-----------
+
+RT-SLAM has some debug flags defined internally on its header
+files. To activate them, you can do the following:
+
+$ cd $ROBOTPKG_BASE/src/robotpkg/wip/jafar-rtslam
+$ make extract # Extract src code into work.<localhost>
+
+Then find the file with the definition inside work.<localhost> and
+edit to set whatever you want. Then, to recompile and install the
+package, do:
+
+$ make install
+
+Available Nodes
+---------------
+
+  - jafardemo_node: Uses the original main.hpp file from RT-SLAM. You
+                    should run it with the options defined in RT-SLAM
+                    webpage.
+
+  - rtslamros_node: Uses a modified main.hpp file, which attempts to
+                    use ROS hardwares defined in this ROS package. ROS
+                    hardware try to read topics only in online
+                    mode. Run it with the same arguments as
+                    jafardemo_node.
+
+  - simplertslamros_node: Uses a simplified version of main.hpp. All
+                          parameters should be set in simplemain.hpp
+                          file before compilation. No arguments are
+                          required to run.
