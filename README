@@ -6,7 +6,7 @@ README - RT-SLAM ROS node
 1) Install robotpkg (See http://robotpkg.openrobots.org)
 2) Clone robotpkg wip (See http://robotpkg.openrobots.org/robotpkg-wip.html)
 3) Install RT-SLAM
-      $ cd $ROBOTPKG_DIR/src/robotpkg/wip/jafar-rtslam/
+      $ cd $ROBOTPKG_BASE/src/robotpkg/wip/jafar-rtslam/
       $ make update
 4) Install ROS (See ros.org)
 5) Setup the catkin workspace (See ROS Tutorials)
@@ -40,7 +40,7 @@ to your $ROBOTPKG_BASE/etc/robotpkg.conf:
    PKG_OPTIONS.jafar-rtslam+= qdisplay gdhe viam MTI posterLib
 
 To install RT-SLAM:
-$] cd $ROBOTPKG_DIR/src/robotpkg/wip/jafar-rtslam/
+$] cd $ROBOTPKG_BASE/src/robotpkg/wip/jafar-rtslam/
 $] make update
 
 To install ROS and catkin follow the ROS Tutorials (http://wiki.ros.org/ROS/Tutorials)
