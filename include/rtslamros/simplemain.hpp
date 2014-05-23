@@ -284,23 +284,23 @@ void demo_slam_simple_stop(world_ptr_t *world)
 	}
 
 	/// \note Need to start hardware first (to launch their threads) before uncommenting this code
-//	// Join estimator and sensor threads
-//	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
-//		robIter != mapPtr->robotList().end(); ++robIter)
-//	{
-//		if ((*robIter)->hardwareEstimatorPtr)
-//		{
-//			std::cout << "Joining robot " << (*robIter)->id() << " estimator..."; std::cout.flush();
-//			(*robIter)->hardwareEstimatorPtr->join();
-//			std::cout << " OK." << std::endl;
-//		}
-//		for (RobotAbstract::SensorList::iterator senIter = (*robIter)->sensorList().begin();
-//			senIter != (*robIter)->sensorList().end(); ++senIter)
-//		{
-//			std::cout << "Joining sensor " << (*senIter)->id() << " " << (*senIter)->name() << "..."; std::cout.flush();
-//			if ((*senIter)->join(1000)) std::cout << " OK." << std::endl; else std::cout << " FAILED." << std::endl;
-//		}
-//	}
+	// Join estimator and sensor threads
+	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
+		 robIter != mapPtr->robotList().end(); ++robIter)
+	{
+		if ((*robIter)->hardwareEstimatorPtr)
+		{
+			std::cout << "Joining robot " << (*robIter)->id() << " estimator..."; std::cout.flush();
+			(*robIter)->hardwareEstimatorPtr->join();
+			std::cout << " OK." << std::endl;
+		}
+		for (RobotAbstract::SensorList::iterator senIter = (*robIter)->sensorList().begin();
+			 senIter != (*robIter)->sensorList().end(); ++senIter)
+		{
+			std::cout << "Joining sensor " << (*senIter)->id() << " " << (*senIter)->name() << "..."; std::cout.flush();
+			if ((*senIter)->join(1000)) std::cout << " OK." << std::endl; else std::cout << " FAILED." << std::endl;
+		}
+	}
 
 } // demo_slam_simple_stop
 
