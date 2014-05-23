@@ -42,7 +42,7 @@ kernel::VariableCondition<int> rawdata_condition(0); // Used to syncronize camer
 boost::scoped_ptr<kernel::LoggerTask> loggerTask; // Used to create a thread to log objects
 boost::scoped_ptr<kernel::DataLogger> dataLogger; // Jafar's logger
 sensor_manager_ptr_t sensorManager;
-
+bool ready = false; // Variable that indicates if the extrapolation was initialized at least once after the robot moves
 
 // General parameters
 #define NICENESS 10 ///< \note Value 10 for "niceness" was taken from main.hpp
@@ -124,6 +124,9 @@ sensor_manager_ptr_t sensorManager;
 
 bool demo_slam_simple_init()
 { JFR_GLOBAL_TRY
+
+	// Unset to be used later on main
+	ready = false;
 
 	/// ---------------------------------------------------------------------------
 	/// --- INIT LOGGER -----------------------------------------------------------
@@ -254,6 +257,7 @@ void demo_slam_simple_stop(world_ptr_t *world)
 {
 	// stop all sensors
 	map_ptr_t mapPtr = (*world)->mapList().front();
+	ready = false; ///< \note Is it needed here? Maybe to avoid exporting after stop
 	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
 		robIter != mapPtr->robotList().end(); ++robIter)
 	{
@@ -280,6 +284,7 @@ void demo_slam_simple_stop(world_ptr_t *world)
 	}
 
 	/// \note Need to start hardware first (to launch their threads) before uncommenting this code
+//	// Join estimator and sensor threads
 //	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
 //		robIter != mapPtr->robotList().end(); ++robIter)
 //	{
@@ -298,3 +303,168 @@ void demo_slam_simple_stop(world_ptr_t *world)
 //	}
 
 } // demo_slam_simple_stop
+
+
+void demo_slam_simple_main(world_ptr_t *world)
+{ JFR_GLOBAL_TRY
+
+	// Declare pointers to be used in the function
+	map_ptr_t mapPtr = (*world)->mapList().front(); // We only have one map
+	robot_ptr_t robotPtr = mapPtr->robotList().front(); // We only have one robot
+
+	// Start hardware sensors that need long init
+	bool has_init = false;
+	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
+		 robIter != mapPtr->robotList().end(); ++robIter)
+	{
+		if ((*robIter)->hardwareEstimatorPtr)  { has_init = true; (*robIter)->hardwareEstimatorPtr->start(); }
+		for (RobotAbstract::SensorList::iterator senIter = (*robIter)->sensorList().begin();
+			 senIter != (*robIter)->sensorList().end(); ++senIter)
+		{
+			if ((*senIter)->getNeedInit())
+			{ has_init = true; (*senIter)->start(); }
+		}
+	}
+
+	// Set the start date
+	double start_date = kernel::Clock::getTime();
+	{
+		// Save the start data in a log file
+		std::fstream f((std::string(DATA_PATH_OPTION) + std::string("/sdate.log")).c_str(), std::ios_base::out);
+		f << std::setprecision(19) << start_date << std::endl;
+		f.close();
+	}
+	// Set the start date in the sensor manager
+	sensorManager->setStartDate(start_date);
+
+	// start other hardware sensors that doesn't need initialization
+	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
+		 robIter != mapPtr->robotList().end(); ++robIter)
+	{
+		for (RobotAbstract::SensorList::iterator senIter = (*robIter)->sensorList().begin();
+			 senIter != (*robIter)->sensorList().end(); ++senIter)
+		{
+			if (!(*senIter)->getNeedInit())
+				(*senIter)->start();
+		}
+	}
+
+	// ---------------------------------------------------------------------------
+	// --- LOOP ------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
+	// INIT : complete observations set
+	// loop all sensors
+	// loop all lmks
+	// create sen--lmk observation
+	// Temporal loop
+	//if (dataLogger) dataLogger->log();
+	double filterTime = 0.0;
+	kernel::Chrono chrono;
+	double next_show_infos = -1;
+
+	// Main loop
+	while (!(*world)->exit())
+	{
+		bool had_data = false;
+		chrono.reset();
+
+		// Get next data from the camera
+		SensorManagerAbstract::ProcessInfo pinfo = sensorManager->getNextDataToUse(filterTime);
+		bool no_more_data = pinfo.no_more_data;
+
+		if (pinfo.sen)
+		{
+			had_data = true;
+
+			// Get the robot that owns the sensor. Normally not needed because we only have one robot in this demo
+			robot_ptr_t robPtr = pinfo.sen->robotPtr();
+
+			double newt = pinfo.date;
+
+			// wait to have all the estimator data (ie one after newt) to do this move,
+			// or it can cause trouble if there are two many missing data,
+			// and it ensures offline repeatability, and quality will be better
+			// TODO be smarter and choose an older data if possible
+			bool waited = false;
+			double wait_time;
+			estimatordata_condition.set(0);
+			double start_date = kernel::Clock::getTime();
+			double waitedmove_date = start_date;
+			bool stop = false;
+			while (!robPtr->move(newt)) // Acumulates the estimator data until after the time the data from the camera arrived
+			{
+				// This block waits for more data to arrive to the IMU and measures the time spent waiting for new data
+				if (!waited) wait_time = kernel::Clock::getTime();
+				waited = true;
+				if (robPtr->hardwareEstimatorPtr->stopped()) { stop = true; break; }
+				estimatordata_condition.wait(boost::lambda::_1 != 0);
+				estimatordata_condition.set(0);
+				waitedmove_date = kernel::Clock::getTime();
+			}
+			double moved_date = kernel::Clock::getTime();
+			if (stop) // Stop if there was no IMU data
+			{
+				std::cout << "No more estimator data, stopping." << std::endl;
+				break;
+			}
+			if (waited) // If had to wait for the IMU, print the wa(i|s)ted time
+			{
+				wait_time = kernel::Clock::getTime() - wait_time;
+				/*if (wait_time > 0.001)*/ std::cout << "wa(i|s)ted " << wait_time << " for estimator data" << std::endl;
+			}
+
+			if (!ready && sensorManager->allInit())
+			{ // here to ensure that at least one move has been done (to init estimator)
+				robPtr->reinit_extrapolate();
+				ready = true;
+			}
+
+			// Process data from the camera until the time the next date will arrive.
+			pinfo.sen->process(pinfo.id, pinfo.date_next);
+
+			// Set which sensor was updated last
+			pinfo.sen->robotPtr()->last_updated = pinfo.sen;
+
+			robPtr->reinit_extrapolate();
+			double processed_date = kernel::Clock::getTime();
+
+			sensorManager->logData(pinfo.sen, start_date, waitedmove_date, moved_date, processed_date);
+			filterTime = robPtr->self_time;
+		}
+
+
+		// Break the main loop if we have no more data
+		if (no_more_data) break;
+
+		// If we didn't have data in this loop, set this thread to wai for more data from the camera
+		if (!had_data)
+		{
+			if (pinfo.date_next < 0) rawdata_condition.wait(boost::lambda::_1 != 0); else
+				rawdata_condition.timed_wait(boost::lambda::_1 != 0, boost::posix_time::microseconds((pinfo.date_next-kernel::Clock::getTime())*1e6));
+		}
+		rawdata_condition.set(0);
+
+		// If we had data, increment world "time" and log
+		if (had_data)
+		{
+			(*world)->t++;
+			if (dataLogger) dataLogger->log();
+		}
+	} // temporal loop
+
+	std::cout << "Stopping RT-SLAM" << std::endl;
+	std::cout << "final_robot_position " << robotPtr->state.x(0) << " " << robotPtr->state.x(1) << " " << robotPtr->state.x(2) << std::endl;
+
+	demo_slam_simple_stop(world);
+
+	JFR_GLOBAL_CATCH
+} // demo_slam_simple_main
+
+void demo_slam_simple_run() {
+
+	/// \todo start displays here in threads
+
+	// launch the main function
+	demo_slam_simple_main(&worldPtr);
+
+} // demo_slam_simple_run

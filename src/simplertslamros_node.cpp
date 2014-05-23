@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 	if (!demo_slam_simple_init()) exit(1);
 	std::cout << "done." << std::endl;
 
-	demo_slam_simple_stop(&worldPtr);
+	demo_slam_simple_run();
 
 	return 0;
 
