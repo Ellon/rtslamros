@@ -4,6 +4,7 @@ FIND_PATH(GDHE_INCLUDE_DIR gdhe/GDHE.h
   ${GDHE_ROOT}/include
   $ENV{GDHE_ROOT}/include
   $ENV{GDHE_ROOT}
+  $ENV{ROBOTPKG_BASE}/include
   /usr/local/include
   /usr/include
   /opt/local/include
@@ -19,6 +20,8 @@ FIND_LIBRARY(GDHE_LIBRARY
   ${GDHE_ROOT}/lib
   $ENV{GDHE_ROOT}/lib/Debug
   $ENV{GDHE_ROOT}/lib
+  $ENV{ROBOTPKG_BASE}/lib/Debug
+  $ENV{ROBOTPKG_BASE}/lib
   NO_DEFAULT_PATH
   )
 
