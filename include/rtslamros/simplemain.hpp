@@ -11,7 +11,6 @@
 #include <rtslam/landmarkAnchoredHomogeneousPoint.hpp>
 #include <rtslam/mapManager.hpp>
 #include <rtslam/robotInertial.hpp>
-#include <rtslam/sensorAbstract.hpp>
 #include <rtslam/observationMakers.hpp>
 #include <rtslam/activeSearch.hpp>
 #include <rtslam/rawProcessors.hpp>
