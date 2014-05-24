@@ -1,3 +1,5 @@
+#include <signal.h>
+
 // We want to use RT-SLAM's typedefs
 #include <rtslam/rtSlam.hpp>
 
@@ -315,6 +317,54 @@ void demo_slam_simple_stop(world_ptr_t *world)
 
 } // demo_slam_simple_stop
 
+/** Sets several signals to the same catcher function
+  */
+void set_signals(sig_t catcher)
+{
+	signal(SIGQUIT, catcher);
+	signal(SIGTERM, catcher);
+	signal(SIGINT, catcher); // ctrl-c
+
+	signal(SIGABRT, catcher);
+	signal(SIGPIPE, catcher);
+	signal(SIGFPE, catcher);
+	signal(SIGSEGV, catcher);
+	//signal(SIGBUS, catcher);
+}
+
+/** Function to stop properly RT-SLAM from a signal catch
+  *
+  * Useful for example when working online and stoping
+  * with a Ctrl-C. Signals to be catch should be set with
+  * a signal(SIGNAL_TYPE, this function.
+  */
+void signal_catcher(int sig __attribute__((unused)))
+{
+	if (worldPtr->error == eNoError) worldPtr->error = eCrashed;
+	static bool first = true;
+	if (first)
+	{
+		first = false;
+		std::cerr << "RT-SLAM is stopping because it received signal " << sig << " \"" << strsignal(sig) << "\"" << std::endl;
+		demo_slam_simple_stop(&worldPtr);
+
+		// force deleting sensors object to call their destructor
+		map_ptr_t mapPtr = worldPtr->mapList().front();
+		for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
+			robIter != mapPtr->robotList().end(); ++robIter)
+		{
+			for (RobotAbstract::SensorList::iterator senIter = (*robIter)->sensorList().begin();
+				senIter != (*robIter)->sensorList().end(); ++senIter)
+				delete (*senIter).get();
+//			if ((*robIter)->hardwareEstimatorPtr.get() != trigger.get()) delete (*robIter).get();
+		}
+//		delete trigger.get();
+	}
+	else std::cerr << "RT-SLAM failed to stop because it received signal " << sig << " \"" << strsignal(sig) << "\"" << std::endl;
+
+	signal(sig, SIG_DFL);
+	raise(sig);
+}
 
 void demo_slam_simple_main(world_ptr_t *world)
 { JFR_GLOBAL_TRY
@@ -322,6 +372,10 @@ void demo_slam_simple_main(world_ptr_t *world)
 	// Declare pointers to be used in the function
 	map_ptr_t mapPtr = (*world)->mapList().front(); // We only have one map
 	robot_ptr_t robotPtr = mapPtr->robotList().front(); // We only have one robot
+
+	// Set the signal catcher. Allows proper finalization of RT-SLAM in a event
+	// of a signal being raised (like a stop by interruption with Ctrl-C).
+	set_signals(signal_catcher);
 
 	// Start hardware sensors that need long init
 	bool has_init = false;
