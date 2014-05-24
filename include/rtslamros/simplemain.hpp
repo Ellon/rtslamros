@@ -54,7 +54,7 @@ bool ready = false; // Variable that indicates if the extrapolation was initiali
 #define GRID_N_DIST 5
 #define GRID_PHI_FACTOR 1.2
 #define TRIGGER_OPTION 0
-#define FREQ_OPTION 60.0
+#define FREQ_OPTION 15.0
 #define SHUTTER_OPTION 0.0
 #define MTI_BUFFER_SIZE 1024
 #define MODE_OPTION rtslam::hardware::mOnline
