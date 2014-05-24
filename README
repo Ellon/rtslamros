@@ -8,17 +8,17 @@ README - RT-SLAM ROS node
 3) Install RT-SLAM
       $ cd $ROBOTPKG_BASE/src/robotpkg/wip/jafar-rtslam/
       $ make update
-4) Install ROS (See ros.org)
-5) Setup the catkin workspace (See ROS Tutorials)
-6) Put rtslamros directory inside <catkin-workspace-dir>/src
+4) Install ROS hydro (See http://wiki.ros.org/ROS/Installation)
+5) Setup the catkin workspace (See http://wiki.ros.org/catkin/Tutorials/create_a_workspace)
+6) Put rtslamros directory inside catkin_ws/src
 7) Run 
-      $ catkin_make -DJAFAR_ROOT=$ROBOTPKG_BASE -DGDHE_ROOT=$ROBOTPKG_BASE -DVIAM_ROOT=$ROBOTPKG_BASE 
-   from the catkin workspace directory
+      $ cd ~/catkin_ws/
+      $ catkin_make
 
 Requirements
 ------------
 
-- ROS
+- ROS hydro
 - RT-SLAM and its dependencies
 
 Instalation Notes
@@ -43,7 +43,8 @@ To install RT-SLAM:
 $] cd $ROBOTPKG_BASE/src/robotpkg/wip/jafar-rtslam/
 $] make update
 
-To install ROS and catkin follow the ROS Tutorials (http://wiki.ros.org/ROS/Tutorials)
+To install ROS follow the instalation notes here:
+http://wiki.ros.org/ROS/Installation
 
 Debug Notes
 -----------
@@ -52,13 +53,19 @@ RT-SLAM has some debug flags defined internally on its header
 files. To activate them, you can do the following:
 
 $ cd $ROBOTPKG_BASE/src/robotpkg/wip/jafar-rtslam
-$ make extract # Extract src code into work.<localhost>
+$ make extract # Extract src code into work.<hostname>
 
-Then find the file with the definition inside work.<localhost> and
+Then find the file with the definition inside work.<hostname> and
 edit to set whatever you want. Then, to recompile and install the
 package, do:
 
+$ cd $ROBOTPKG_BASE/src/robotpkg/wip/jafar-rtslam
 $ make install
+
+Important: you should keep yout work.<hostname> directory with the
+source codes to debug properly. It means do not run "make clean" or
+"make update" (the later automatically cleans the directory after the
+update).
 
 Available Nodes
 ---------------
