@@ -24,6 +24,9 @@ namespace jafar {
 namespace rtslamros {
 namespace hardware {
 
+using namespace jafar::rtslam;
+using namespace jafar::rtslam::hardware;
+
 void HardwareSensorCameraRos::callback(const sensor_msgs::Image& msg)
 {
 	cv_bridge::CvImagePtr cv_ptr;
@@ -64,10 +67,24 @@ void HardwareSensorCameraRos::preloadTask(void)
 	}
 
 	/// @todo Maybe change to CameraSubscriber (from image_transport)
-	ros::Subscriber sub = nh.subscribe("/uav0/camera/0/image_raw", 500, &HardwareSensorCameraRos::callback, this);
+	ros::Subscriber sub;
+
+	bool has_publisher = false;
+	if(mode != mOffline)
+		sub = nh.subscribe("/uav0/camera/0/image_raw", 500, &HardwareSensorCameraRos::callback, this);
 
 	while(!stopping)
 	{
+
+		// Wait until has a publisher and set the has_publisher flag once got one publisher.
+		if(!has_publisher && sub.getNumPublishers() == 0) continue; else has_publisher = true;
+
+		// Verify if the publisher finished and then finish too.
+		if(has_publisher && sub.getNumPublishers() == 0 && camera_callback_queue.empty()){
+			std::cout << "No more publishers. Stopping camera..." << std::endl;
+			no_more_data = true; stopping = true; break;
+		}
+
 		// capture image
 		int buff_write = getWritePos(true); // don't need to lock because we are the only writer
 		callback_img = bufferSpecPtr[buff_write];

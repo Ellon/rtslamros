@@ -61,7 +61,10 @@ void HardwareSensorMtiRos::preloadTask(void)
 	if (mode == mOnlineDump) log.openWrite("MTI", dump_path, 0, reading.data.size(), loggerTask);
 	if (mode == mOffline) log.openRead("MTI", dump_path, format, size);
 
-	ros::Subscriber sub = nh.subscribe("/uav0/imu", 1024, &HardwareSensorMtiRos::callback, this);
+	ros::Subscriber sub;
+	bool has_publisher = false;
+	if(mode != mOffline)
+		sub = nh.subscribe("/uav0/imu", 1024, &HardwareSensorMtiRos::callback, this);
 
 	while (!stopping)
 	{
@@ -75,6 +78,15 @@ void HardwareSensorMtiRos::preloadTask(void)
 			if (stopping) break;
 		} else
 		{
+			// Wait until has a publisher and set the has_publisher flag once got one publisher.
+			if(!has_publisher && sub.getNumPublishers() == 0) continue; else has_publisher = true;
+
+			// Verify if the publisher finished and then finish too.
+			if(has_publisher && sub.getNumPublishers() == 0 && imu_callback_queue.empty()){
+				std::cout << "No more publishers. Stopping IMU..." << std::endl;
+				no_more_data = true; stopping = true; break;
+			}
+
 			if(imu_callback_queue.callOne(ros::WallDuration()) != ros::CallbackQueue::Called) continue;
 			if (isFull()) JFR_ERROR(RtslamException, RtslamException::BUFFER_OVERFLOW, "Data not read: Increase MTI buffer size !");
 		}
