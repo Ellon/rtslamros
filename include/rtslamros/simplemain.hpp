@@ -259,7 +259,10 @@ bool demo_slam_simple_init()
 	senPtr11->setHardwareSensor(hardSen11);
 
 	// Create sensor manager
-	sensorManager.reset(new SensorManagerOnline(mapPtr, DATA_PATH_OPTION, loggerTask.get()));
+	if(MODE_OPTION == rtslam::hardware::mOffline)
+		sensorManager.reset(new SensorManagerOffline(mapPtr, "")); ///< \todo Check what's the difference between passing or the data path as the second argument
+	else
+		sensorManager.reset(new SensorManagerOnline(mapPtr, DATA_PATH_OPTION, loggerTask.get()));
 
 	return true;
 	JFR_GLOBAL_CATCH
