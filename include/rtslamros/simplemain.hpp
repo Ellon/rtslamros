@@ -393,17 +393,6 @@ void demo_slam_simple_main(world_ptr_t *world)
 		}
 	}
 
-	// Set the start date
-	double start_date = kernel::Clock::getTime();
-	{
-		// Save the start data in a log file
-		std::fstream f((std::string(DATA_PATH_OPTION) + std::string("/sdate.log")).c_str(), std::ios_base::out);
-		f << std::setprecision(19) << start_date << std::endl;
-		f.close();
-	}
-	// Set the start date in the sensor manager
-	sensorManager->setStartDate(start_date);
-
 	// start other hardware sensors that doesn't need initialization
 	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
 		 robIter != mapPtr->robotList().end(); ++robIter)
@@ -415,6 +404,18 @@ void demo_slam_simple_main(world_ptr_t *world)
 				(*senIter)->start();
 		}
 	}
+
+	// Set the start date
+	double start_date = kernel::Clock::getTime();
+	{
+		// Save the start data in a log file
+		std::fstream f((std::string(DATA_PATH_OPTION) + std::string("/sdate.log")).c_str(), std::ios_base::out);
+		f << std::setprecision(19) << start_date << std::endl;
+		f.close();
+	}
+	// Set the start date in the sensor manager
+	sensorManager->setStartDate(start_date);
+
 
 	// ---------------------------------------------------------------------------
 	// --- LOOP ------------------------------------------------------------------
