@@ -60,7 +60,7 @@ bool ready = false; // Variable that indicates if the extrapolation was initiali
 #define MTI_BUFFER_SIZE 1024
 #define MODE_OPTION rtslam::hardware::mOnline
 #define DATA_PATH_OPTION "/home/emendes/workspace/rtslam-log-test/"
-#define CAMERA_ID 0
+#define CAMERA_ID 1
 #define CAMERA_BUFFER 500
 
 // Estimation parameters
