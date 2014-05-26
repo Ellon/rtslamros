@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rtslamros" type="simplertslamros_node" name="simplertslamros">
+  </node>
+</launch>
