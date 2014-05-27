@@ -339,11 +339,13 @@ void set_signals(sig_t catcher)
   *
   * Useful for example when working online and stoping
   * with a Ctrl-C. Signals to be catch should be set with
-  * a signal(SIGNAL_TYPE, this function.
+  * a signal(SIGNAL_TYPE, this function).
   */
 void signal_catcher(int sig __attribute__((unused)))
 {
 	if (worldPtr->error == eNoError) worldPtr->error = eCrashed;
+	// This boolean mark the first time we entered this function. It's needed in the case the stop procedure gets blocked
+	// when called the first time. In this case it will not try again a second time.
 	static bool first = true;
 	if (first)
 	{
@@ -428,10 +430,9 @@ void demo_slam_simple_main(world_ptr_t *world)
 	// loop all lmks
 	// create sen--lmk observation
 	// Temporal loop
-	//if (dataLogger) dataLogger->log();
+	// if (dataLogger) dataLogger->log();
 	double filterTime = 0.0;
 	kernel::Chrono chrono;
-	double next_show_infos = -1;
 
 	// Main loop
 	while (!(*world)->exit())
