@@ -255,6 +255,7 @@ bool demo_slam_simple_init()
 
 	// Create hardware for the camera
 	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, rtslamoptions::mode, CAMERA_ID, cv::Size(IMG_WIDTH,IMG_HEIGHT),CAMERA_BUFFER,loggerTask.get(),rtslamoptions::datapath));
+	hardSen11->setTimingInfos(1.0/hardSen11->getFreq(), 1.0/hardSen11->getFreq());
 	senPtr11->setHardwareSensor(hardSen11);
 
 	// Create sensor manager
