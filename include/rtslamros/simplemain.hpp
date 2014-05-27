@@ -26,11 +26,13 @@
 // To parse options from config file and command line
 #include "rtslamros/option_parser.hpp"
 
+// To broadcast the estimated robot pose we need a tf broadcaster
+#include <tf/transform_broadcaster.h>
+
 // Namespaces being used
 using namespace jafar::rtslamros;
 using namespace jafar::rtslam;
 using namespace jafar;
-using namespace boost;
 
 // type definitions
 typedef ImagePointObservationMaker<ObservationPinHoleEuclideanPoint, SensorPinhole, LandmarkEuclideanPoint,
@@ -47,6 +49,7 @@ boost::scoped_ptr<kernel::LoggerTask> loggerTask; // Used to create a thread to 
 boost::scoped_ptr<kernel::DataLogger> dataLogger; // Jafar's logger
 sensor_manager_ptr_t sensorManager;
 bool ready = false; // Variable that indicates if the extrapolation was initialized at least once after the robot moves
+boost::scoped_ptr<tf::TransformBroadcaster> tfBroadcasterPtr; // Used to broadcast robot estimated pose
 
 // General parameters
 #define NICENESS 10 ///< \note Value 10 for "niceness" was taken from main.hpp
@@ -263,6 +266,9 @@ bool demo_slam_simple_init()
 		sensorManager.reset(new SensorManagerOffline(mapPtr, "")); ///< \todo Check what's the difference between passing or the data path as the second argument
 	else
 		sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get()));
+
+	// Initialize the tf broadcaster
+	tfBroadcasterPtr.reset(new tf::TransformBroadcaster());
 
 	return true;
 	JFR_GLOBAL_CATCH
@@ -502,6 +508,13 @@ void demo_slam_simple_main(world_ptr_t *world)
 
 			sensorManager->logData(pinfo.sen, start_date, waitedmove_date, moved_date, processed_date);
 			filterTime = robPtr->self_time;
+
+			// Broadcast current estimation on /tf topic
+			tf::Transform transform;
+			// NOTE: The robot pose is represented inside RT-SLAM in the following order: [x y z qw qx qy qz]
+			transform.setOrigin( tf::Vector3(robPtr->state.x(0), robPtr->state.x(1), robPtr->state.x(2)) );
+			transform.setRotation( tf::Quaternion(robPtr->state.x(4), robPtr->state.x(5), robPtr->state.x(6), robPtr->state.x(3)) );
+			tfBroadcasterPtr->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "uav0/rtslam"));
 		}
 
 
