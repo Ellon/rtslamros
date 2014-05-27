@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serialization)
+find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serialization program_options)
 
 ## Look for Jafar library 
 ##   A separation into "REQUIRED (...) COMPONENTS (...)" should be able to separate

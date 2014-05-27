@@ -23,6 +23,9 @@
 #include "rtslamros/hardwareSensorMtiRos.hpp"
 #include "rtslamros/hardwareSensorCameraRos.hpp"
 
+// To parse options from config file and command line
+#include "rtslamros/option_parser.hpp"
+
 // Namespaces being used
 using namespace jafar::rtslamros;
 using namespace jafar::rtslam;
@@ -47,7 +50,6 @@ bool ready = false; // Variable that indicates if the extrapolation was initiali
 
 // General parameters
 #define NICENESS 10 ///< \note Value 10 for "niceness" was taken from main.hpp
-#define LOG_FILE "/home/emendes/workspace/rtslam-log-test/rtslamros.log" /// \todo Set this path from options
 /// \todo Understand and maybe update these grid parameters
 #define GRID_ANGULAR_RES 6.77233 ///< \note This was calculated as min_cell_fov from all cameras.
 #define GRID_DIST_INIT 0.5
@@ -58,8 +60,6 @@ bool ready = false; // Variable that indicates if the extrapolation was initiali
 #define FREQ_OPTION 15.0
 #define SHUTTER_OPTION 0.0
 #define MTI_BUFFER_SIZE 1024
-#define MODE_OPTION rtslam::hardware::mOnline
-#define DATA_PATH_OPTION "/home/emendes/workspace/rtslam-log-test/"
 #define CAMERA_ID 1
 #define CAMERA_BUFFER 500
 
@@ -145,7 +145,7 @@ bool demo_slam_simple_init()
 	/// --- INIT LOGGER -----------------------------------------------------------
 	/// ---------------------------------------------------------------------------
 	loggerTask.reset(new kernel::LoggerTask(NICENESS));
-	dataLogger.reset(new kernel::DataLogger(LOG_FILE));
+	dataLogger.reset(new kernel::DataLogger(rtslamoptions::logfile));
 	dataLogger->setLoggerTask(loggerTask.get());
 	dataLogger->writeCurrentDate();
 	dataLogger->writeNewLine();
@@ -200,8 +200,7 @@ bool demo_slam_simple_init()
 	boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1(new rtslamros::hardware::HardwareSensorMtiRos(&estimatordata_condition,
 																														MTI_DEVICE,
 																														TRIGGER_OPTION, FREQ_OPTION, SHUTTER_OPTION, ///< \todo Verify if trigger, freq and shutter are important when reading data from ROS topics.
-																														MTI_BUFFER_SIZE, MODE_OPTION,
-																														DATA_PATH_OPTION,
+																														MTI_BUFFER_SIZE, rtslamoptions::mode, rtslamoptions::datapath,
 																														loggerTask.get()));
 	hardEst1->setSyncConfig(IMU_TIMESTAMP_CORRECTION);
 	robPtr1->setHardwareEstimator(hardEst1);
@@ -255,14 +254,14 @@ bool demo_slam_simple_init()
 	if (dataLogger) dataLogger->addLoggable(*dmPt11.get());
 
 	// Create hardware for the camera
-	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, MODE_OPTION, CAMERA_ID, cv::Size(IMG_WIDTH,IMG_HEIGHT),CAMERA_BUFFER,loggerTask.get(),DATA_PATH_OPTION));
+	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, rtslamoptions::mode, CAMERA_ID, cv::Size(IMG_WIDTH,IMG_HEIGHT),CAMERA_BUFFER,loggerTask.get(),rtslamoptions::datapath));
 	senPtr11->setHardwareSensor(hardSen11);
 
 	// Create sensor manager
-	if(MODE_OPTION == rtslam::hardware::mOffline)
+	if(rtslamoptions::mode == rtslam::hardware::mOffline)
 		sensorManager.reset(new SensorManagerOffline(mapPtr, "")); ///< \todo Check what's the difference between passing or the data path as the second argument
 	else
-		sensorManager.reset(new SensorManagerOnline(mapPtr, DATA_PATH_OPTION, loggerTask.get()));
+		sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get()));
 
 	return true;
 	JFR_GLOBAL_CATCH
@@ -412,7 +411,7 @@ void demo_slam_simple_main(world_ptr_t *world)
 	double start_date = kernel::Clock::getTime();
 	{
 		// Save the start data in a log file
-		std::fstream f((std::string(DATA_PATH_OPTION) + std::string("/sdate.log")).c_str(), std::ios_base::out);
+		std::fstream f((std::string(rtslamoptions::datapath) + std::string("/sdate.log")).c_str(), std::ios_base::out);
 		f << std::setprecision(19) << start_date << std::endl;
 		f.close();
 	}

@@ -8,6 +8,9 @@ int main(int argc, char **argv)
 	// Initialize ROS
 	ros::init(argc, argv, "rtslamros_node");
 
+	// Parse input arguments
+	rtslamoptions::parse_options(argc, argv);
+
 	// Initialize SLAM
 	std::cout << "Initializing..." << std::flush;
 	if (!demo_slam_simple_init()) exit(1);
