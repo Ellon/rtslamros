@@ -380,8 +380,6 @@ void signal_catcher(int sig __attribute__((unused)))
 void demo_slam_simple_main(world_ptr_t *world)
 { JFR_GLOBAL_TRY
 
-	debug::DebugStream::moduleOff("rtslam");
-
 	// Declare pointers to be used in the function
 	map_ptr_t mapPtr = (*world)->mapList().front(); // We only have one map
 	robot_ptr_t robotPtr = mapPtr->robotList().front(); // We only have one robot

@@ -43,6 +43,8 @@ if(Qt4_FOUND AND Jafar_QDISPLAY_FOUND)
   add_definitions(-DHAVE_MODULE_QDISPLAY)
 endif(Qt4_FOUND AND Jafar_QDISPLAY_FOUND)
 
+## Disable debug messages on RT-SLAM's headers
+add_definitions(-DJFR_NDEBUG)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
