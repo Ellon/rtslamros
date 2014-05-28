@@ -186,6 +186,8 @@ target_link_libraries(jafardemo_node
 target_link_libraries(simplertslamros_node
   librtslamros
   ${Jafar_LIBRARIES}
+  ${GDHE_LIBRARY}
+  ${QT_LIBRARIES}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )

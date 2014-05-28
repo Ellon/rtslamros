@@ -1,6 +1,7 @@
 #ifndef OPTION_PARSER_HPP
 #define OPTION_PARSER_HPP
 
+// To parse options from config file and command line
 #include <boost/program_options.hpp>
 
 #include <iostream>
@@ -13,10 +14,18 @@
 // Protect the option variables by an namespace
 namespace rtslamoptions{
 
+/// \todo Create enumerations here for the int options to help checking for options in the main code
+
 // List of variables set by the command line arguments and config file
-jafar::rtslam::hardware::Mode mode;
 std::string logfile;
 std::string datapath;
+bool dispQt;
+bool dispGdhe;
+unsigned pause;
+bool renderall;
+unsigned replay;
+bool dump;
+
 
 // parser function
 int parse_options(int ac, char* av[])
@@ -26,7 +35,6 @@ int parse_options(int ac, char* av[])
 
 	// Internal variables to the parser functions
 	string config_file;
-	unsigned replay;
 
 	try {
 		// Declare a group of options that will be allowed only on command line
@@ -41,11 +49,15 @@ int parse_options(int ac, char* av[])
 		// command line and in config file
 		po::options_description config("Configuration");
 		config.add_options()
-				("replay", po::value<unsigned>(&replay)->default_value(0), "replay mode: 0 for online, 1 for offline")
+				("replay", po::value<unsigned>(&replay)->default_value(0), "replay mode: '0' for online, '1' for offline, '2' for online no slam, '3' for offline replay")
 				("log-file", po::value<string>(&logfile)->default_value("rtslam.log"), "log result output in text file in --data-path")
 				("data-path", po::value<string>(&datapath)->default_value("."), "path to store or read data")
+				("disp-2d", po::value<bool>(&dispQt)->default_value(false), "use 2D display (Qt)")
+				("disp-3d", po::value<bool>(&dispGdhe)->default_value(false), "use 3D display (GDHE)")
+				("pause", po::value<unsigned>(&pause)->default_value(0), "pause after integrating data: '0' disables, 'n' pauses after frame n")
+				("render-all", po::value<bool>(&renderall)->default_value(false), "force rendering display for all frames")
+				("dump", po::value<bool>(&dump)->default_value(false), "dump images (with --replay=0/2) or rendered views (with --replay=1/3)") /// \warning Not sure of the behaviour with --replay=2/3
 				;
-
 
 		// Create the description for the cmdline options from generic and config descriptions
 		po::options_description cmdline_options;
@@ -85,13 +97,6 @@ int parse_options(int ac, char* av[])
 		if (vm.count("version")) {
 			cout << "RT-SLAM ROS, version 0.1\n";
 			exit(0);
-		}
-
-		// Some variables need to be properly set from the options. We're doing it here.
-		if (vm.count("replay")) {
-			if(replay == 0) mode = jafar::rtslam::hardware::mOnline;
-			else if(replay == 1) mode = jafar::rtslam::hardware::mOffline;
-			else mode = jafar::rtslam::hardware::mOnlineDump;
 		}
 
 		if (vm.count("log-file"))
