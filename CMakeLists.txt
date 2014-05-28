@@ -41,7 +41,11 @@ endif(Viam_FOUND)
 find_package(OpenCV REQUIRED)
 
 ## Look for Qt4 libs (TODO: Change it for optional)
-find_package(Qt4 REQUIRED)
+find_package(Qt4 REQUIRED COMPONENTS QtCore QtGui )
+include(${QT_USE_FILE})
+## This definition is needed to make QT work with 3rd party
+## signals/slots libraries (like boost::signals, used by tf)
+add_definitions(-DQT_NO_KEYWORDS)
 
 ## Define precompiler flag needed to use Qt Display
 if(QT4_FOUND AND Jafar_qdisplay_FOUND)
