@@ -24,9 +24,12 @@ find_package(Jafar REQUIRED kernel jmath image correl rtslam COMPONENTS gdhe qdi
 
 ## Look for GDHE library (TODO: Change it for optional)
 find_package(GDHE REQUIRED)
-if(GDHE_FOUND AND Jafar_GHDE_FOUND)
+
+## Define precompiler flag needed to use GDHE Display
+if(GDHE_FOUND AND Jafar_gdhe_FOUND)
+  message(STATUS "Found GDHE and Jafar GDHE module. Defining -DHAVE_MODULE_GDHE")
   add_definitions(-DHAVE_MODULE_GDHE)
-endif(GDHE_FOUND AND Jafar_GHDE_FOUND)
+endif(GDHE_FOUND AND Jafar_gdhe_FOUND)
 
 ## Look for Viam library (TODO: Change it for optional)
 find_package(Viam REQUIRED)
@@ -39,11 +42,14 @@ find_package(OpenCV REQUIRED)
 
 ## Look for Qt4 libs (TODO: Change it for optional)
 find_package(Qt4 REQUIRED)
-if(Qt4_FOUND AND Jafar_QDISPLAY_FOUND)
-  add_definitions(-DHAVE_MODULE_QDISPLAY)
-endif(Qt4_FOUND AND Jafar_QDISPLAY_FOUND)
 
-## Disable debug messages on RT-SLAM's headers
+## Define precompiler flag needed to use Qt Display
+if(QT4_FOUND AND Jafar_qdisplay_FOUND)
+  message(STATUS "Found Qt4 and Jafar QDisplay module. Defining -DHAVE_MODULE_QDISPLAY")
+  add_definitions(-DHAVE_MODULE_QDISPLAY)
+endif(QT4_FOUND AND Jafar_qdisplay_FOUND)
+
+## Disable debug messages from RT-SLAM's headers
 add_definitions(-DJFR_NDEBUG)
 
 ## Uncomment this if the package has a setup.py. This macro ensures

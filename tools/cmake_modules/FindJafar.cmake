@@ -23,9 +23,7 @@ ENDIF()
 
 MACRO(FIND_JAFAR_MODULE MYMODULE)
 
-string(TOUPPER ${MYMODULE} MYMODULEUPPER)
 string(TOLOWER ${MYMODULE} MYMODULELOWER)
-
 
 FIND_PATH(Jafar_${MYMODULE}_INCLUDE_DIR ${MYMODULELOWER}Exception.hpp
   ${Jafar_INCLUDE_DIR}/${MYMODULELOWER}
@@ -64,7 +62,7 @@ FIND_PATH(Jafar_${MYMODULE}_INCLUDE_DIR ${MYMODULELOWER}Exception.hpp
     )
   
   IF(Jafar_${MYMODULE}_INCLUDE_DIR AND Jafar_${MYMODULE}_LIBRARY)
-     SET(Jafar_${MYMODULEUPPER}_FOUND TRUE)
+     SET(Jafar_${MYMODULE}_FOUND TRUE)
   ENDIF()
 
 ENDMACRO(FIND_JAFAR_MODULE MYMODULE)
@@ -73,8 +71,7 @@ ENDMACRO(FIND_JAFAR_MODULE MYMODULE)
 IF(Jafar_INCLUDE_DIR)
   FOREACH(MODULE ${Jafar_FIND_COMPONENTS})
     FIND_JAFAR_MODULE(${MODULE})
-    STRING(TOUPPER ${MODULE} UPPERMODULE)
-    IF(Jafar_${UPPERMODULE}_FOUND)
+    IF(Jafar_${MODULE}_FOUND)
       LIST(APPEND Jafar_LIBRARIES ${Jafar_${MODULE}_LIBRARY})
       LIST(APPEND Jafar_INCLUDE_DIRS ${Jafar_${MODULE}_INCLUDE_DIR})
     ENDIF()
@@ -84,13 +81,22 @@ ENDIF()
 # Jafar itself declared found if we found the kernel and jmath libraries 
 IF(Jafar_LIBRARIES AND Jafar_INCLUDE_DIRS)
    SET(Jafar_FOUND TRUE)
-   MESSAGE(STATUS "Found the following Jafar modules:")
+   IF(NOT Jafar_FIND_QUIETLY)
+      MESSAGE(STATUS "Found the following Jafar modules:")
+   ENDIF(NOT Jafar_FIND_QUIETLY)
    FOREACH(MODULE ${Jafar_FIND_COMPONENTS})
-      STRING( TOUPPER ${MODULE} UPPERMODULE )
-      IF( Jafar_${UPPERMODULE}_FOUND )
+      IF( Jafar_${MODULE}_FOUND )
          IF(NOT Jafar_FIND_QUIETLY)
             MESSAGE(STATUS "  ${MODULE}")
          ENDIF(NOT Jafar_FIND_QUIETLY)
-      ENDIF( Jafar_${UPPERMODULE}_FOUND )
+      ELSE( Jafar_${MODULE}_FOUND )
+         IF(Jafar_FIND_REQUIRED_${MODULE})
+            MESSAGE(FATAL_ERROR "  The following Jafar module could not be found:\n      ${MODULE}\n  You may need to install this additional Jafar module. Alternatively, set JAFAR_ROOT to the location of Jafar")
+         ENDIF(Jafar_FIND_REQUIRED_${MODULE})
+      ENDIF( Jafar_${MODULE}_FOUND )
    ENDFOREACH(MODULE)
 ENDIF()
+
+IF((NOT Jafar_FOUND) AND Jafar_FIND_REQUIRED)
+   MESSAGE(FATAL_ERROR "  Jafar not found!\n\nYou may need to install Jafar kernel module. Alternatively, set JAFAR_ROOT to the location of Jafar")
+ENDIF((NOT Jafar_FOUND) AND Jafar_FIND_REQUIRED)
