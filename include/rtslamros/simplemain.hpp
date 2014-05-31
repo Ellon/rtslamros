@@ -82,64 +82,76 @@ display::ViewerGdhe *viewerGdhe = NULL;
 #define CAMERA_BUFFER 500
 
 // Estimation parameters
-#define MAP_SIZE 500 ///< \todo Read map size from estimation file
-#define REPARAM_TH 0.1
-#define KILL_SEARCH_SIZE 100000
-#define D_MIN 0.3
-#define PATCH_SIZE 11
-#define PIX_NOISE 1.0
 #define CORRECTION_SIZE 4
+#define MAP_SIZE 500 ///< \todo Read map size from estimation file
+#define PIX_NOISE 1.0
+
+#define D_MIN 0.3
+#define REPARAM_TH 0.1
 #define GRID_HCELLS 6
 #define GRID_VCELLS 4
 #define GRID_MARGIN 5
 #define GRID_SEPAR 7
-#define RANSAC_NTRIES 6
-#define DESC_SIZE 21
-#define HARRIS_CONV_SIZE 5
-#define HARRIS_TH 5.0
-#define HARRIS_EDDGE 1.4
-#define MIN_SCORE 0.70
-#define PARTIAL_POSITION 0.25
-#define MAX_SEARCH_SIZE 10000
-#define RANSAC_LOW_INNOV 1.0
-#define MATCH_TH 0.75
-#define HI_MATCH_TH 0.85
-#define HI_LIMIT 100
-#define MAHALANOBIS_TH 3.0
+
 #define RELEVANCE_TH 2.0
+#define MAHALANOBIS_TH 3.0
 #define N_UPDATES_TOTAL 25
 #define N_UPDATES_RANSAC 22
 #define N_INIT 10
 #define N_RECOMP_GAINS 2
+#define RANSAC_LOW_INNOV 1.0
+
+#define RANSAC_NTRIES 6
 #define MULTIPLE_DEPTH_HYPOS false ///< \note MULTIPLE_DEPTH_HYPOS was set in an exeption catch on main.hpp
+
+#define HARRIS_CONV_SIZE 5
+#define HARRIS_TH 5.0
+#define HARRIS_EDDGE 1.4
+
+#define DESC_SIZE 21
+
+#define PATCH_SIZE 11
+#define MAX_SEARCH_SIZE 10000
+#define KILL_SEARCH_SIZE 100000
+#define MATCH_TH 0.75
+#define MIN_SCORE 0.70
+#define HI_MATCH_TH 0.85
+#define HI_LIMIT 100
+#define PARTIAL_POSITION 0.25
 
 
 
 // Setup parameters
-#define UNCERT_VLIN 0.0
-#define UNCERT_ABIAS 0.01
-#define UNCERT_WBIAS 0.01
-#define UNCERT_GRAVITY 0.01
-#define ACCELERO_FULLSCALE 17.0
-#define GYRO_FULLSCALE 5.23599
-#define INITIAL_GRAVITY 9.806 ///< \note Initial gravity was set in an exeption catch on main.hpp
-#define PERT_AERR 1.0
-#define PERT_WERR 1.0
-#define ACCELERO_NOISE 0.0109545
-#define GYRO_NOISE 0.00772691
-#define PERT_RANWALKACC 0.0
-#define PERT_RANWALKGYRO 0.0
-#define MTI_DEVICE "" ///< \todo Not used in HardwareSensorMtiRos. Could be the topic name to read IMU data
-#define IMU_TIMESTAMP_CORRECTION 0.0
-#define ROBOT_POSE {0,0,-0.647,0,0,0} ///< \todo Set robot pose tf
-#define INITIAL_HEADING 0
-#define UNCERT_ATTITUDE 0.05
-#define UNCERT_HEADING 0.1
 #define CAMERA_POSE {0.000,0.000,-0.100,radToDeg(-1.873),radToDeg(-0.000),radToDeg(-1.571)} // xyzrpy (m,deg) ///< \todo Set camera pose from setup file
-#define CAMERA_INTRINSIC {161.209259,123.44138,300.3122405,299.5597015} ///< \todo Set camera intrinsics from tf
-#define CAMERA_DISTORTION {-0.409016,0.197327,0.0} ///< \todo Set camera distortion from tf
+#define ROBOT_POSE {0,0,-0.647,0,0,0} ///< \todo Set robot pose tf
+
 #define IMG_WIDTH 320 ///< \todo Set image width from tf
 #define IMG_HEIGHT 240 ///< \todo Set image height from tf
+#define CAMERA_INTRINSIC {161.209259,123.44138,300.3122405,299.5597015} ///< \todo Set camera intrinsics from tf
+#define CAMERA_DISTORTION {-0.409016,0.197327,0.0} ///< \todo Set camera distortion from tf
+
+#define UNCERT_VLIN 0.0
+
+#define MTI_DEVICE "" ///< \todo Not used in HardwareSensorMtiRos. Could be the topic name to read IMU data
+#define ACCELERO_FULLSCALE 17.0
+#define ACCELERO_NOISE 0.0109545
+#define GYRO_FULLSCALE 5.23599
+#define GYRO_NOISE 0.00772691
+
+#define INITIAL_GRAVITY 9.806 ///< \note Initial gravity was set in an exeption catch on main.hpp
+#define UNCERT_GRAVITY 0.01
+#define UNCERT_ABIAS 0.01
+#define UNCERT_WBIAS 0.01
+#define PERT_AERR 1.0
+#define PERT_WERR 1.0
+#define PERT_RANWALKACC 0.0
+#define PERT_RANWALKGYRO 0.0
+
+#define INITIAL_HEADING 0
+#define UNCERT_HEADING 0.1
+#define UNCERT_ATTITUDE 0.05
+
+#define IMU_TIMESTAMP_CORRECTION 0.0
 
 //distortion_model: plumb_bob
 //D: [-0.409016, 0.197327, -0.0051849999999999995, -0.0048839999999999995, 0.0]
