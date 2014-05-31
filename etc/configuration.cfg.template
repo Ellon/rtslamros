@@ -1,0 +1,70 @@
+
+# Estimation parameters
+CORRECTION_SIZE = ?
+MAP_SIZE        = ?
+PIX_NOISE       = ?
+
+D_MIN       = ?
+REPARAM_TH  = ?
+GRID_HCELLS = ?
+GRID_VCELLS = ?
+GRID_MARGIN = ?
+GRID_SEPAR  = ?
+
+RELEVANCE_TH     = ?
+MAHALANOBIS_TH   = ?
+N_UPDATES_TOTAL  = ?
+N_UPDATES_RANSAC = ?
+N_INIT           = ?
+N_RECOMP_GAINS   = ?
+RANSAC_LOW_INNOV = ?
+
+RANSAC_NTRIES        = ?
+MULTIPLE_DEPTH_HYPOS = ?
+
+HARRIS_CONV_SIZE = ?
+HARRIS_TH        = ?
+HARRIS_EDDGE     = ?
+
+DESC_SIZE = ?
+
+PATCH_SIZE       = ?
+MAX_SEARCH_SIZE  = ?
+KILL_SEARCH_SIZE = ?
+MATCH_TH         = ?
+MIN_SCORE        = ?
+HI_MATCH_TH      = ?
+HI_LIMIT         = ?
+PARTIAL_POSITION = ?
+
+# Setup parameters
+CAMERA_POSE = [6](?,?,?,?,?,?)
+ROBOT_POSE  = [6](?,?,?,?,?,?)
+
+CAMERA_IMG_WIDTH  = ?
+CAMERA_IMG_HEIGHT = ?
+CAMERA_INTRINSIC  = [4](?,?,?,?)
+CAMERA_DISTORTION = [3](?,?,?)
+
+UNCERT_VLIN = ?
+
+MTI_DEVICE         = ?
+ACCELERO_FULLSCALE = ?
+ACCELERO_NOISE     = ?
+GYRO_FULLSCALE     = ?
+GYRO_NOISE         = ?
+
+INITIAL_GRAVITY  = ?
+UNCERT_GRAVITY   = ?
+UNCERT_ABIAS     = ?
+UNCERT_WBIAS     = ?
+PERT_AERR        = ?
+PERT_WERR        = ?
+PERT_RANWALKACC  = ?
+PERT_RANWALKGYRO = ?
+
+INITIAL_HEADING = ?
+UNCERT_HEADING  = ?
+UNCERT_ATTITUDE = ?
+
+IMU_TIMESTAMP_CORRECTION = ?
