@@ -81,77 +81,15 @@ display::ViewerGdhe *viewerGdhe = NULL;
 #define CAMERA_ID 1
 #define CAMERA_BUFFER 500
 
-// Estimation parameters
-#define CORRECTION_SIZE 4
-#define MAP_SIZE 500 ///< \todo Read map size from estimation file
-#define PIX_NOISE 1.0
-
-#define D_MIN 0.3
-#define REPARAM_TH 0.1
-#define GRID_HCELLS 6
-#define GRID_VCELLS 4
-#define GRID_MARGIN 5
-#define GRID_SEPAR 7
-
-#define RELEVANCE_TH 2.0
-#define MAHALANOBIS_TH 3.0
-#define N_UPDATES_TOTAL 25
-#define N_UPDATES_RANSAC 22
-#define N_INIT 10
-#define N_RECOMP_GAINS 2
-#define RANSAC_LOW_INNOV 1.0
-
-#define RANSAC_NTRIES 6
-#define MULTIPLE_DEPTH_HYPOS false ///< \note MULTIPLE_DEPTH_HYPOS was set in an exeption catch on main.hpp
-
-#define HARRIS_CONV_SIZE 5
-#define HARRIS_TH 5.0
-#define HARRIS_EDDGE 1.4
-
-#define DESC_SIZE 21
-
-#define PATCH_SIZE 11
-#define MAX_SEARCH_SIZE 10000
-#define KILL_SEARCH_SIZE 100000
-#define MATCH_TH 0.75
-#define MIN_SCORE 0.70
-#define HI_MATCH_TH 0.85
-#define HI_LIMIT 100
-#define PARTIAL_POSITION 0.25
-
-
-
-// Setup parameters
-#define CAMERA_POSE {0.000,0.000,-0.100,radToDeg(-1.873),radToDeg(-0.000),radToDeg(-1.571)} // xyzrpy (m,deg) ///< \todo Set camera pose from setup file
-#define ROBOT_POSE {0,0,-0.647,0,0,0} ///< \todo Set robot pose tf
-
-#define IMG_WIDTH 320 ///< \todo Set image width from tf
-#define IMG_HEIGHT 240 ///< \todo Set image height from tf
-#define CAMERA_INTRINSIC {161.209259,123.44138,300.3122405,299.5597015} ///< \todo Set camera intrinsics from tf
-#define CAMERA_DISTORTION {-0.409016,0.197327,0.0} ///< \todo Set camera distortion from tf
-
-#define UNCERT_VLIN 0.0
-
-#define MTI_DEVICE "" ///< \todo Not used in HardwareSensorMtiRos. Could be the topic name to read IMU data
-#define ACCELERO_FULLSCALE 17.0
-#define ACCELERO_NOISE 0.0109545
-#define GYRO_FULLSCALE 5.23599
-#define GYRO_NOISE 0.00772691
-
-#define INITIAL_GRAVITY 9.806 ///< \note Initial gravity was set in an exeption catch on main.hpp
-#define UNCERT_GRAVITY 0.01
-#define UNCERT_ABIAS 0.01
-#define UNCERT_WBIAS 0.01
-#define PERT_AERR 1.0
-#define PERT_WERR 1.0
-#define PERT_RANWALKACC 0.0
-#define PERT_RANWALKGYRO 0.0
-
-#define INITIAL_HEADING 0
-#define UNCERT_HEADING 0.1
-#define UNCERT_ATTITUDE 0.05
-
-#define IMU_TIMESTAMP_CORRECTION 0.0
+/// \note MULTIPLE_DEPTH_HYPOS was set in an exeption catch on main.hpp
+/// \todo Set initial camera pose from tf topic
+/// \todo Set initial robot pose from tf topic
+/// \todo Set image width from camera topic
+/// \todo Set image height from camera topic
+/// \todo Set camera intrinsics from camera topic
+/// \todo Set camera distortion from camera topic
+/// \todo Set the MTI device to be the MTI topic name
+/// \note Initial gravity was set in an exeption catch on main.hpp
 
 //distortion_model: plumb_bob
 //D: [-0.409016, 0.197327, -0.0051849999999999995, -0.0048839999999999995, 0.0]
@@ -199,7 +137,7 @@ bool demo_slam_simple_init()
 	/// ---------------------------------------------------------------------------
 
 	// Create map
-	map_ptr_t mapPtr(new MapAbstract(MAP_SIZE));
+	map_ptr_t mapPtr(new MapAbstract(configEstimation.MAP_SIZE));
 	mapPtr->linkToParentWorld(worldPtr);
 
 	// Create map manager.
@@ -211,7 +149,7 @@ bool demo_slam_simple_init()
 	const int gridNDist = GRID_N_DIST;
 	const double gridPhiFactor = GRID_PHI_FACTOR;
 	map_manager_ptr_t mmPoint(new MapManagerOdometry(pointLmkFactory,
-													 REPARAM_TH, KILL_SEARCH_SIZE,
+													 configEstimation.REPARAM_TH, configEstimation.KILL_SEARCH_SIZE,
 													 gridAngularRes, gridDistInit, gridDistFactor, gridNDist, gridPhiFactor));
 	mmPoint->linkToParentMap(mapPtr);
 
@@ -221,34 +159,33 @@ bool demo_slam_simple_init()
 
 	robinertial_ptr_t robPtr1(new RobotInertial(mapPtr));
 
-	robPtr1->setInitialStd(UNCERT_VLIN,
-						   UNCERT_ABIAS*ACCELERO_FULLSCALE,
-						   UNCERT_WBIAS*GYRO_FULLSCALE,
-						   UNCERT_GRAVITY*INITIAL_GRAVITY);
+	robPtr1->setInitialStd(configSetup.UNCERT_VLIN,
+						   configSetup.UNCERT_ABIAS*configSetup.ACCELERO_FULLSCALE,
+						   configSetup.UNCERT_WBIAS*configSetup.GYRO_FULLSCALE,
+						   configSetup.UNCERT_GRAVITY*configSetup.INITIAL_GRAVITY);
 
-	robPtr1->setInitialParams(INITIAL_GRAVITY);
-	double aerr = PERT_AERR * ACCELERO_NOISE;
-	double werr = PERT_WERR * GYRO_NOISE;
+	robPtr1->setInitialParams(configSetup.INITIAL_GRAVITY);
+	double aerr = configSetup.PERT_AERR * configSetup.ACCELERO_NOISE;
+	double werr = configSetup.PERT_WERR * configSetup.GYRO_NOISE;
 	double _v12[12] = {
 		aerr, aerr, aerr, werr, werr, werr,
-		PERT_RANWALKACC, PERT_RANWALKACC, PERT_RANWALKACC,
-		PERT_RANWALKACC, PERT_RANWALKACC, PERT_RANWALKACC};
+		configSetup.PERT_RANWALKACC, configSetup.PERT_RANWALKACC, configSetup.PERT_RANWALKACC,
+		configSetup.PERT_RANWALKACC, configSetup.PERT_RANWALKACC, configSetup.PERT_RANWALKACC};
 	vec pertStd = createVector<12>(_v12);
 	robPtr1->perturbation.set_std_continuous(pertStd);
 
 	boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1(new rtslamros::hardware::HardwareSensorMtiRos(&estimatordata_condition,
-																														MTI_DEVICE,
+																														configSetup.MTI_DEVICE,
 																														TRIGGER_OPTION, FREQ_OPTION, SHUTTER_OPTION, ///< \todo Verify if trigger, freq and shutter are important when reading data from ROS topics.
 																														MTI_BUFFER_SIZE, mode, rtslamoptions::datapath,
 																														loggerTask.get()));
-	hardEst1->setSyncConfig(IMU_TIMESTAMP_CORRECTION);
+	hardEst1->setSyncConfig(configSetup.IMU_TIMESTAMP_CORRECTION);
 	robPtr1->setHardwareEstimator(hardEst1);
 
 	robPtr1->linkToParentMap(mapPtr);
-	double _vrobot_pose[6] = ROBOT_POSE;
-	robPtr1->setRobotPose( createVector<6>(_vrobot_pose), true);
-	robPtr1->setOrientationStd(0,0,INITIAL_HEADING,
-							   UNCERT_ATTITUDE,UNCERT_ATTITUDE,UNCERT_HEADING,
+	robPtr1->setRobotPose( configSetup.ROBOT_POSE, true);
+	robPtr1->setOrientationStd(0,0,configSetup.INITIAL_HEADING,
+							   configSetup.UNCERT_ATTITUDE,configSetup.UNCERT_ATTITUDE,configSetup.UNCERT_HEADING,
 							   false);
 
 	if (dataLogger) dataLogger->addLoggable(*robPtr1.get()); /// \warning This line creates a segmentation fault when destroying the robot...
@@ -258,21 +195,17 @@ bool demo_slam_simple_init()
 	/// ---------------------------------------------------------------------------
 
 	boost::shared_ptr<ObservationFactory> obsFact(new ObservationFactory());
-	obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeEucpObservationMaker(D_MIN,PATCH_SIZE)));
-	obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeAhpObservationMaker(D_MIN,PATCH_SIZE)));
+	obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeEucpObservationMaker(configEstimation.D_MIN,configEstimation.PATCH_SIZE)));
+	obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeAhpObservationMaker(configEstimation.D_MIN,configEstimation.PATCH_SIZE)));
 
 	// a. Create camera
 	pinhole_ptr_t senPtr11(new SensorPinhole(robPtr1, MapObject::UNFILTERED));
 	senPtr11->linkToParentRobot(robPtr1);
 	senPtr11->name("cam");
-	double _vcamera_pose[6] = CAMERA_POSE; ///< \todo Set camera pose from setup file
-	jblas::vec camera_pose = createVector<6>(_vcamera_pose);
-	senPtr11->setPose(camera_pose(0), camera_pose(1), camera_pose(2), camera_pose(3), camera_pose(4), camera_pose(5)); // x,y,z,roll,pitch,yaw
+	senPtr11->setPose(configSetup.CAMERA_POSE(0), configSetup.CAMERA_POSE(1), configSetup.CAMERA_POSE(2), configSetup.CAMERA_POSE(3), configSetup.CAMERA_POSE(4), configSetup.CAMERA_POSE(5)); // x,y,z,roll,pitch,yaw
 
-	double _vintrinsic[4] = CAMERA_INTRINSIC;
-	double _vdistortion[3] = CAMERA_DISTORTION;
-	senPtr11->params.setIntrinsicCalibration(IMG_WIDTH, IMG_HEIGHT, createVector<4>(_vintrinsic), createVector<3>(_vdistortion), CORRECTION_SIZE);
-	senPtr11->params.setMiscellaneous(PIX_NOISE, D_MIN);
+	senPtr11->params.setIntrinsicCalibration(configSetup.CAMERA_IMG_WIDTH, configSetup.CAMERA_IMG_HEIGHT, configSetup.CAMERA_INTRINSIC, configSetup.CAMERA_DISTORTION, configEstimation.CORRECTION_SIZE);
+	senPtr11->params.setMiscellaneous(configEstimation.PIX_NOISE, configEstimation.D_MIN);
 
 	if (dataLogger) dataLogger->addLoggable(*senPtr11.get());
 
@@ -281,11 +214,11 @@ bool demo_slam_simple_init()
 	senPtr11->setNeedInit(true); // for auto exposure
 
 	// b. Create data manager.
-	boost::shared_ptr<ActiveSearchGrid> asGrid(new ActiveSearchGrid(IMG_WIDTH, IMG_HEIGHT, GRID_HCELLS, GRID_VCELLS, GRID_MARGIN, GRID_SEPAR));
-	boost::shared_ptr<DescriptorFactoryAbstract> pointDescFactory(new DescriptorImagePointFirstViewFactory(DESC_SIZE));
-	boost::shared_ptr<ImagePointHarrisDetector> harrisDetector(new ImagePointHarrisDetector(HARRIS_CONV_SIZE, HARRIS_TH, HARRIS_EDDGE, PATCH_SIZE, PIX_NOISE, pointDescFactory));
-	boost::shared_ptr<ImagePointZnccMatcher> znccMatcher(new ImagePointZnccMatcher(MIN_SCORE, PARTIAL_POSITION, PATCH_SIZE, MAX_SEARCH_SIZE, RANSAC_LOW_INNOV, MATCH_TH, HI_MATCH_TH, HI_LIMIT, MAHALANOBIS_TH, RELEVANCE_TH, PIX_NOISE));
-	boost::shared_ptr<DataManager_ImagePoint_Ransac> dmPt11(new DataManager_ImagePoint_Ransac(harrisDetector, znccMatcher, asGrid, N_UPDATES_TOTAL, N_UPDATES_RANSAC, RANSAC_NTRIES, N_INIT, N_RECOMP_GAINS, MULTIPLE_DEPTH_HYPOS, loggerTask.get()));
+	boost::shared_ptr<ActiveSearchGrid> asGrid(new ActiveSearchGrid(configSetup.CAMERA_IMG_WIDTH, configSetup.CAMERA_IMG_HEIGHT, configEstimation.GRID_HCELLS, configEstimation.GRID_VCELLS, configEstimation.GRID_MARGIN, configEstimation.GRID_SEPAR));
+	boost::shared_ptr<DescriptorFactoryAbstract> pointDescFactory(new DescriptorImagePointFirstViewFactory(configEstimation.DESC_SIZE));
+	boost::shared_ptr<ImagePointHarrisDetector> harrisDetector(new ImagePointHarrisDetector(configEstimation.HARRIS_CONV_SIZE, configEstimation.HARRIS_TH, configEstimation.HARRIS_EDDGE, configEstimation.PATCH_SIZE, configEstimation.PIX_NOISE, pointDescFactory));
+	boost::shared_ptr<ImagePointZnccMatcher> znccMatcher(new ImagePointZnccMatcher(configEstimation.MIN_SCORE, configEstimation.PARTIAL_POSITION, configEstimation.PATCH_SIZE, configEstimation.MAX_SEARCH_SIZE, configEstimation.RANSAC_LOW_INNOV, configEstimation.MATCH_TH, configEstimation.HI_MATCH_TH, configEstimation.HI_LIMIT, configEstimation.MAHALANOBIS_TH, configEstimation.RELEVANCE_TH, configEstimation.PIX_NOISE));
+	boost::shared_ptr<DataManager_ImagePoint_Ransac> dmPt11(new DataManager_ImagePoint_Ransac(harrisDetector, znccMatcher, asGrid, configEstimation.N_UPDATES_TOTAL, configEstimation.N_UPDATES_RANSAC, configEstimation.RANSAC_NTRIES, configEstimation.N_INIT, configEstimation.N_RECOMP_GAINS, configEstimation.MULTIPLE_DEPTH_HYPOS, loggerTask.get()));
 
 	dmPt11->linkToParentSensorSpec(senPtr11);
 	dmPt11->linkToParentMapManager(mmPoint);
@@ -293,7 +226,7 @@ bool demo_slam_simple_init()
 	if (dataLogger) dataLogger->addLoggable(*dmPt11.get());
 
 	// Create hardware for the camera
-	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, CAMERA_ID, cv::Size(IMG_WIDTH,IMG_HEIGHT),CAMERA_BUFFER,loggerTask.get(),rtslamoptions::datapath));
+	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, CAMERA_ID, cv::Size(configSetup.CAMERA_IMG_WIDTH,configSetup.CAMERA_IMG_HEIGHT),CAMERA_BUFFER,loggerTask.get(),rtslamoptions::datapath));
 	hardSen11->setTimingInfos(1.0/hardSen11->getFreq(), 1.0/hardSen11->getFreq());
 	senPtr11->setHardwareSensor(hardSen11);
 
@@ -313,7 +246,7 @@ bool demo_slam_simple_init()
 #ifdef HAVE_MODULE_QDISPLAY
 	if (rtslamoptions::dispQt)
 	{
-		display::ViewerQt *viewerQt = new display::ViewerQt(8, MAHALANOBIS_TH);
+		display::ViewerQt *viewerQt = new display::ViewerQt(8, configEstimation.MAHALANOBIS_TH);
 		worldPtr->addDisplayViewer(viewerQt, display::ViewerQt::id());
 
 		// force a first display with empty slam to ensure that all windows are loaded
@@ -330,7 +263,7 @@ bool demo_slam_simple_init()
 #ifdef HAVE_MODULE_GDHE
 	if (rtslamoptions::dispGdhe)
 	{
-		display::ViewerGdhe *viewerGdhe = new display::ViewerGdhe("camera", MAHALANOBIS_TH);
+		display::ViewerGdhe *viewerGdhe = new display::ViewerGdhe("camera", configEstimation.MAHALANOBIS_TH);
 		worldPtr->addDisplayViewer(viewerGdhe, display::ViewerGdhe::id());
 
 		// force a first display with empty slam to ensure that all windows are loaded
