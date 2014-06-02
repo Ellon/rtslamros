@@ -484,12 +484,21 @@ void demo_slam_simple_main(world_ptr_t *world)
 		}
 	}
 
-	// Set the start date
+	// Set the start date according to the options
 	double start_date = kernel::Clock::getTime();
+	// If online and dumping, write start date on file
+	if((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) && rtslamoptions::dump)
 	{
-		// Save the start data in a log file
-		std::fstream f((std::string(rtslamoptions::datapath) + std::string("/sdate.log")).c_str(), std::ios_base::out);
+		std::fstream f((rtslamoptions::datapath + std::string("/sdate.log")).c_str(), std::ios_base::out);
 		f << std::setprecision(19) << start_date << std::endl;
+		f.close();
+	}
+	// If offline, read start date from sdate.log file. Returns in case of error.
+	else if (rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay)
+	{
+		std::fstream f((rtslamoptions::datapath + std::string("/sdate.log")).c_str(), std::ios_base::in);
+		if (!f.is_open()) { std::cout << "Missing sdate.log file. Please copy the .time file of the first image to sdate.log" << std::endl; return; }
+		f >> start_date;
 		f.close();
 	}
 	// Set the start date in the sensor manager
