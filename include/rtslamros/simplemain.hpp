@@ -121,9 +121,11 @@ bool demo_slam_simple_init()
 	/// ---------------------------------------------------------------------------
 	/// --- INIT LOGGER -----------------------------------------------------------
 	/// ---------------------------------------------------------------------------
+	// We will have a logger task if we have a log file or we're dumping information
 	if (!rtslamoptions::logfile.empty() || rtslamoptions::dump)
 		loggerTask.reset(new kernel::LoggerTask(NICENESS));
 
+	// If we have a log file, open and initialize it (write some stuff).
 	if (!rtslamoptions::logfile.empty()) {
 		dataLogger.reset(new kernel::DataLogger(rtslamoptions::logfile));
 		dataLogger->setLoggerTask(loggerTask.get());
@@ -538,56 +540,56 @@ void demo_slam_simple_main(world_ptr_t *world)
 			if(rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
 				pinfo.sen->process_fake(pinfo.id,true);
 			else {
-			double newt = pinfo.date;
+				double newt = pinfo.date;
 
-			// wait to have all the estimator data (ie one after newt) to do this move,
-			// or it can cause trouble if there are two many missing data,
-			// and it ensures offline repeatability, and quality will be better
-			// TODO be smarter and choose an older data if possible
-			bool waited = false;
-			double wait_time;
-			estimatordata_condition.set(0);
-			double start_date = kernel::Clock::getTime();
-			double waitedmove_date = start_date;
-			bool stop = false;
-			while (!robPtr->move(newt)) // Acumulates the estimator data until after the time the data from the camera arrived
-			{
-				// This block waits for more data to arrive to the IMU and measures the time spent waiting for new data
-				if (!waited) wait_time = kernel::Clock::getTime();
-				waited = true;
-				if (robPtr->hardwareEstimatorPtr->stopped()) { stop = true; break; }
-				estimatordata_condition.wait(boost::lambda::_1 != 0);
+				// wait to have all the estimator data (ie one after newt) to do this move,
+				// or it can cause trouble if there are two many missing data,
+				// and it ensures offline repeatability, and quality will be better
+				// TODO be smarter and choose an older data if possible
+				bool waited = false;
+				double wait_time;
 				estimatordata_condition.set(0);
-				waitedmove_date = kernel::Clock::getTime();
-			}
-			double moved_date = kernel::Clock::getTime();
-			if (stop) // Stop if there was no IMU data
-			{
-				std::cout << "No more estimator data, stopping." << std::endl;
-				break;
-			}
-			if (waited) // If had to wait for the IMU, print the wa(i|s)ted time
-			{
-				wait_time = kernel::Clock::getTime() - wait_time;
-				/*if (wait_time > 0.001)*/ std::cout << "wa(i|s)ted " << wait_time << " for estimator data" << std::endl;
-			}
+				double start_date = kernel::Clock::getTime();
+				double waitedmove_date = start_date;
+				bool stop = false;
+				while (!robPtr->move(newt)) // Acumulates the estimator data until after the time the data from the camera arrived
+				{
+					// This block waits for more data to arrive to the IMU and measures the time spent waiting for new data
+					if (!waited) wait_time = kernel::Clock::getTime();
+					waited = true;
+					if (robPtr->hardwareEstimatorPtr->stopped()) { stop = true; break; }
+					estimatordata_condition.wait(boost::lambda::_1 != 0);
+					estimatordata_condition.set(0);
+					waitedmove_date = kernel::Clock::getTime();
+				}
+				double moved_date = kernel::Clock::getTime();
+				if (stop) // Stop if there was no IMU data
+				{
+					std::cout << "No more estimator data, stopping." << std::endl;
+					break;
+				}
+				if (waited) // If had to wait for the IMU, print the wa(i|s)ted time
+				{
+					wait_time = kernel::Clock::getTime() - wait_time;
+					/*if (wait_time > 0.001)*/ std::cout << "wa(i|s)ted " << wait_time << " for estimator data" << std::endl;
+				}
 
-			if (!ready && sensorManager->allInit())
-			{ // here to ensure that at least one move has been done (to init estimator)
+				if (!ready && sensorManager->allInit())
+				{ // here to ensure that at least one move has been done (to init estimator)
+					robPtr->reinit_extrapolate();
+					ready = true;
+				}
+
+				// Process data from the camera until the time the next date will arrive.
+				pinfo.sen->process(pinfo.id, pinfo.date_next);
+
+				// Set which sensor was updated last
+				pinfo.sen->robotPtr()->last_updated = pinfo.sen;
+
 				robPtr->reinit_extrapolate();
-				ready = true;
-			}
+				double processed_date = kernel::Clock::getTime();
 
-			// Process data from the camera until the time the next date will arrive.
-			pinfo.sen->process(pinfo.id, pinfo.date_next);
-
-			// Set which sensor was updated last
-			pinfo.sen->robotPtr()->last_updated = pinfo.sen;
-
-			robPtr->reinit_extrapolate();
-			double processed_date = kernel::Clock::getTime();
-
-			sensorManager->logData(pinfo.sen, start_date, waitedmove_date, moved_date, processed_date);
+				sensorManager->logData(pinfo.sen, start_date, waitedmove_date, moved_date, processed_date);
 			}
 			filterTime = robPtr->self_time;
 
