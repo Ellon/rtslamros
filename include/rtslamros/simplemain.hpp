@@ -109,7 +109,7 @@ bool demo_slam_simple_init()
 	// Set the mode based on the options.
 	/// \todo I feel a mixing between mode and replay/dump variables... it should be clarified and maybe the mode could be set directly by the user, and the program would stop if the combinations of modes are not allowed.
 	/// \warning I have no idea if the lines below are correct
-	if(rtslamoptions::replay == 1 || rtslamoptions::replay == 3) mode = jafar::rtslam::hardware::mOffline;
+	if(rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) mode = jafar::rtslam::hardware::mOffline;
 	else{
 		if(rtslamoptions::dump) mode = jafar::rtslam::hardware::mOnlineDump;
 		else mode = jafar::rtslam::hardware::mOnlineDump;
@@ -234,13 +234,15 @@ bool demo_slam_simple_init()
 	senPtr11->setHardwareSensor(hardSen11);
 
 	// Create sensor manager
-	if(mode == rtslam::hardware::mOffline)
-		sensorManager.reset(new SensorManagerOffline(mapPtr, "")); ///< \todo Check what's the difference between passing or the data path as the second argument
+	// Obs: Offline has no logger task;
+	if(rtslamoptions::replay == rtslamoptions::rOffline)
+		sensorManager.reset(new SensorManagerOffline(mapPtr));
+	else if (rtslamoptions::replay == rtslamoptions::rOfflineReplay)
+		sensorManager.reset(new SensorManagerOffline(mapPtr, rtslamoptions::datapath)); // data path to replay data offline
+	else if(rtslamoptions::dump)
+		sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get())); // datapath to dump
 	else
-		if(rtslamoptions::dump)
-			sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get())); // pass datapath to dump
-		else
-			sensorManager.reset(new SensorManagerOnline(mapPtr, "", loggerTask.get())); // pass empty datapath to disable dumping.
+		sensorManager.reset(new SensorManagerOnline(mapPtr, "", loggerTask.get())); // empty datapath to disable dumping.
 
 	// Initialize the tf broadcaster
 	tfBroadcasterPtr.reset(new tf::TransformBroadcaster());
@@ -738,9 +740,7 @@ void demo_slam_simple_display(world_ptr_t *world)
 #endif
 
 		// Dump rendered views if we are in any offline mode and with dump on.
-		//            offline                      offline replay
-		//           vvvvvvvvv                    vvvvvvvvvvvvvvvv
-		if ((rtslamoptions::replay == 1 || rtslamoptions::replay == 3) && rtslamoptions::dump && (*world)->display_t+1 != 0)
+		if ((rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) && rtslamoptions::dump && (*world)->display_t+1 != 0)
 		{
 #ifdef HAVE_MODULE_QDISPLAY
 			if (rtslamoptions::dispQt)

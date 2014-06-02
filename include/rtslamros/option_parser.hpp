@@ -107,6 +107,13 @@ namespace rtslamoptions{
 
 /// \todo Create enumerations here for the int options to help checking for options in the main code
 
+// Replay enumeration
+enum {
+	rOnline = 0,
+	rOffline,
+	rOnlineNoSlam,
+	rOfflineReplay
+};
 // List of variables set by the command line arguments and config file
 std::string logfile;
 std::string datapath;
@@ -138,11 +145,19 @@ int parse_options(int ac, char* av[])
 				("config,c", po::value<string>(&config_file),"name of a file of a configuration.")
 				;
 
+		// Mount the description string of replay option.
+		std::stringstream replay_ss;
+		replay_ss << std::string("replay mode: '")
+				  << rOnline << std::string("' for online, '")
+				  << rOffline << std::string("' for offline, '")
+				  << rOnlineNoSlam << std::string("' for online no slam, '")
+				  << rOfflineReplay << std::string("' for offline replay");
+
 		// Declare a group of options that will be allowed both on
 		// command line and in config file
 		po::options_description config("Configuration");
 		config.add_options()
-				("replay", po::value<unsigned>(&replay)->default_value(0), "replay mode: '0' for online, '1' for offline, '2' for online no slam, '3' for offline replay")
+				("replay", po::value<unsigned>(&replay)->default_value(rOnline), replay_ss.str().c_str())
 				("log-file", po::value<string>(&logfile)->default_value("rtslam.log"), "log result output in text file in --data-path")
 				("data-path", po::value<string>(&datapath)->default_value("."), "path to store or read data")
 				("disp-2d", po::value<bool>(&dispQt)->default_value(false), "use 2D display (Qt)")
