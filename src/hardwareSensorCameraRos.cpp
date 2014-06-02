@@ -70,8 +70,13 @@ void HardwareSensorCameraRos::preloadTask(void)
 	ros::Subscriber sub;
 
 	bool has_publisher = false;
+	// the image topic is set to "image_raw". Remap it to your topic name with
+	//     image_raw:=/your/topic/name
+	// in command line or
+	//     <remap from="image_raw" to="/your/topic/name"/>
+	// in the launch file
 	if(mode != mOffline)
-		sub = nh.subscribe("/uav0/camera/0/image_raw", 500, &HardwareSensorCameraRos::callback, this);
+		sub = nh.subscribe("image_raw", 500, &HardwareSensorCameraRos::callback, this);
 
 	while(!stopping)
 	{

@@ -63,8 +63,13 @@ void HardwareSensorMtiRos::preloadTask(void)
 
 	ros::Subscriber sub;
 	bool has_publisher = false;
+	// imu topic is set to "imu". Remap it to your topic name with
+	//     imu:=/your/topic/name
+	// in command line or
+	//     <remap from="imu" to="/your/topic/name"/>
+	// in the launch file
 	if(mode != mOffline)
-		sub = nh.subscribe("/uav0/imu", 1024, &HardwareSensorMtiRos::callback, this);
+		sub = nh.subscribe("imu", 1024, &HardwareSensorMtiRos::callback, this);
 
 	while (!stopping)
 	{
