@@ -534,6 +534,10 @@ void demo_slam_simple_main(world_ptr_t *world)
 			// Get the robot that owns the sensor. Normally not needed because we only have one robot in this demo
 			robot_ptr_t robPtr = pinfo.sen->robotPtr();
 
+			// If we're not doing slam, fake the processing of the image if not go through the normal process.
+			if(rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+				pinfo.sen->process_fake(pinfo.id,true);
+			else {
 			double newt = pinfo.date;
 
 			// wait to have all the estimator data (ie one after newt) to do this move,
@@ -584,6 +588,7 @@ void demo_slam_simple_main(world_ptr_t *world)
 			double processed_date = kernel::Clock::getTime();
 
 			sensorManager->logData(pinfo.sen, start_date, waitedmove_date, moved_date, processed_date);
+			}
 			filterTime = robPtr->self_time;
 
 			// Broadcast current estimation on /tf topic
