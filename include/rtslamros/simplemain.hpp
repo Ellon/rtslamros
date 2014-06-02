@@ -179,7 +179,6 @@ bool demo_slam_simple_init()
 	robPtr1->perturbation.set_std_continuous(pertStd);
 
 	boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1(new rtslamros::hardware::HardwareSensorMtiRos(&estimatordata_condition,
-																														configSetup.MTI_DEVICE,
 																														TRIGGER_OPTION, FREQ_OPTION, SHUTTER_OPTION, ///< \todo Verify if trigger, freq and shutter are important when reading data from ROS topics.
 																														MTI_BUFFER_SIZE, mode, rtslamoptions::datapath,
 																														loggerTask.get()));

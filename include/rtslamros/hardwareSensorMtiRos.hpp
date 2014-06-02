@@ -52,7 +52,7 @@ private:
 public:
 
 
-	HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, std::string topic, double trigger_mode,
+	HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, double trigger_mode,
 						 double trigger_freq, double trigger_shutter, int bufferSize_, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOnline,
 						 std::string dump_path = ".", kernel::LoggerTask *loggerTask = NULL);
 	~HardwareSensorMtiRos();

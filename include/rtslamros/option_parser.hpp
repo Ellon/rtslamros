@@ -27,7 +27,6 @@ class ConfigSetup
 
 	/// INERTIAL (also using UNCERT_VLIN)
 	double UNCERT_VLIN;        ///< initial uncertainty stdev on linear velocity (m/s)
-	std::string MTI_DEVICE;    ///< IMU device
 	double ACCELERO_FULLSCALE; ///< full scale of accelerometers (m/s2)  (MTI: 17)
 	double ACCELERO_NOISE;     ///< noise stdev of accelerometers (m/s2) (MTI: 0.002*sqrt(30) )
 	double GYRO_FULLSCALE;     ///< full scale of gyrometers (rad/s)     (MTI: rad(300) )
@@ -167,7 +166,6 @@ int parse_options(int ac, char* av[])
 		        ("CAMERA_DISTORTION", po::value< jblas::vec3 >(&configSetup.CAMERA_DISTORTION), "distortion calibration parameters (r1,r2,r3)")
 		        ("CAMERA_CALIB", po::value< std::string >(&configSetup.CAMERA_CALIB), "calibration file if need to rectify")
 		        ("UNCERT_VLIN", po::value< double >(&configSetup.UNCERT_VLIN), "initial uncertainty stdev on linear velocity (m/s)")
-		        ("MTI_DEVICE", po::value< std::string >(&configSetup.MTI_DEVICE), "IMU device")
 		        ("ACCELERO_FULLSCALE", po::value< double >(&configSetup.ACCELERO_FULLSCALE), "full scale of accelerometers (m/s2)  (MTI: 17)")
 		        ("ACCELERO_NOISE", po::value< double >(&configSetup.ACCELERO_NOISE), "noise stdev of accelerometers (m/s2) (MTI: 0.002*sqrt(30) )")
 		        ("GYRO_FULLSCALE", po::value< double >(&configSetup.GYRO_FULLSCALE), "full scale of gyrometers (rad/s)     (MTI: rad(300) )")

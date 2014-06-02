@@ -115,7 +115,7 @@ void HardwareSensorMtiRos::preloadTask(void)
 	JFR_GLOBAL_CATCH
 }
 
-HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, std::string topic, double trigger_mode,
+HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, double trigger_mode,
 										   double trigger_freq, double trigger_shutter, int bufferSize_, Mode mode, std::string dump_path,
 										   kernel::LoggerTask *loggerTask):
 	HardwareSensorProprioAbstract(condition, mode, bufferSize_, ctNone),

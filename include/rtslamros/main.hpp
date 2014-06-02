@@ -979,7 +979,7 @@ bool demo_slam_init()
 		  /** CHANGE_HERE_TO_ROS
 		   */
 			boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1_(new rtslamros::hardware::HardwareSensorMtiRos(
-				&estimatordata_condition, configSetup.MTI_DEVICE, intOpts[iTrigger], floatOpts[fFreq], floatOpts[fShutter], 1024, mode, strOpts[sDataPath], loggerTask.get()));
+				&estimatordata_condition, intOpts[iTrigger], floatOpts[fFreq], floatOpts[fShutter], 1024, mode, strOpts[sDataPath], loggerTask.get()));
 			trigger_construction_date = kernel::Clock::getTime();
 			if (intOpts[iTrigger] != 0) floatOpts[fFreq] = hardEst1_->getFreq();
 			hardEst1_->setSyncConfig(configSetup.IMU_TIMESTAMP_CORRECTION);
