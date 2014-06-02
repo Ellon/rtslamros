@@ -132,6 +132,26 @@ bool demo_slam_simple_init()
 	}
 
 	/// ---------------------------------------------------------------------------
+	/// --- LOAD RANDOM SEED ------------------------------------------------------
+	/// ---------------------------------------------------------------------------
+	unsigned rseed = jmath::get_srand();
+	if (rtslamoptions::randomseed != rtslamoptions::seedGenerate && rtslamoptions::randomseed != rtslamoptions::seedUseSaved)
+		rseed = rtslamoptions::randomseed;
+	if ((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) && rtslamoptions::dump) {
+		std::fstream f((rtslamoptions::datapath + std::string("/rseed.log")).c_str(), std::ios_base::out);
+		f << rseed << std::endl;
+		f.close();
+	}
+	else if (rtslamoptions::replay == rtslamoptions::rOffline && rtslamoptions::randomseed == rtslamoptions::seedUseSaved) {
+		std::fstream f((rtslamoptions::datapath + std::string("/rseed.log")).c_str(), std::ios_base::in);
+		f >> rseed;
+		f.close();
+	}
+	std::cout << "Random seed " << rseed << std::endl;
+	rtslam::srand(rseed);
+
+
+	/// ---------------------------------------------------------------------------
 	/// --- INIT WORLD ------------------------------------------------------------
 	/// ---------------------------------------------------------------------------
 	worldPtr.reset(new WorldAbstract());

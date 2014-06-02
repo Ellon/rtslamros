@@ -114,6 +114,12 @@ enum {
 	rOnlineNoSlam,
 	rOfflineReplay
 };
+// Random Seed enumeration
+enum {
+	seedGenerate = 0,
+	seedUseSaved
+};
+
 // List of variables set by the command line arguments and config file
 std::string logfile;
 std::string datapath;
@@ -123,6 +129,7 @@ unsigned pause;
 bool renderall;
 unsigned replay;
 bool dump;
+unsigned randomseed;
 
 
 // parser function
@@ -153,11 +160,19 @@ int parse_options(int ac, char* av[])
 				  << rOnlineNoSlam << std::string("' for online no slam, '")
 				  << rOfflineReplay << std::string("' for offline replay");
 
+		// Mount the description string of random seed
+		std::stringstream seed_ss;
+		seed_ss << std::string("randon seed: '")
+				  << seedGenerate << std::string("' generate a new one, '")
+				  << seedUseSaved << std::string("' use a saved one, '")
+				  << std::string("'n' uses n as a new seed");
+
 		// Declare a group of options that will be allowed both on
 		// command line and in config file
 		po::options_description config("Configuration");
 		config.add_options()
 				("replay", po::value<unsigned>(&replay)->default_value(rOnline), replay_ss.str().c_str())
+				("rand-seed", po::value<unsigned>(&randomseed)->default_value(seedGenerate), seed_ss.str().c_str())
 				("log-file", po::value<string>(&logfile)->default_value("rtslam.log"), "log result output in text file in --data-path")
 				("data-path", po::value<string>(&datapath)->default_value("."), "path to store or read data")
 				("disp-2d", po::value<bool>(&dispQt)->default_value(false), "use 2D display (Qt)")
