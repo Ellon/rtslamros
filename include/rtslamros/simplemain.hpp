@@ -121,11 +121,15 @@ bool demo_slam_simple_init()
 	/// ---------------------------------------------------------------------------
 	/// --- INIT LOGGER -----------------------------------------------------------
 	/// ---------------------------------------------------------------------------
-	loggerTask.reset(new kernel::LoggerTask(NICENESS));
-	dataLogger.reset(new kernel::DataLogger(rtslamoptions::logfile));
-	dataLogger->setLoggerTask(loggerTask.get());
-	dataLogger->writeCurrentDate();
-	dataLogger->writeNewLine();
+	if (!rtslamoptions::logfile.empty() || rtslamoptions::dump)
+		loggerTask.reset(new kernel::LoggerTask(NICENESS));
+
+	if (!rtslamoptions::logfile.empty()) {
+		dataLogger.reset(new kernel::DataLogger(rtslamoptions::logfile));
+		dataLogger->setLoggerTask(loggerTask.get());
+		dataLogger->writeCurrentDate();
+		dataLogger->writeNewLine();
+	}
 
 	/// ---------------------------------------------------------------------------
 	/// --- INIT WORLD ------------------------------------------------------------
@@ -234,7 +238,10 @@ bool demo_slam_simple_init()
 	if(mode == rtslam::hardware::mOffline)
 		sensorManager.reset(new SensorManagerOffline(mapPtr, "")); ///< \todo Check what's the difference between passing or the data path as the second argument
 	else
-		sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get()));
+		if(rtslamoptions::dump)
+			sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get())); // pass datapath to dump
+		else
+			sensorManager.reset(new SensorManagerOnline(mapPtr, "", loggerTask.get())); // pass empty datapath to disable dumping.
 
 	// Initialize the tf broadcaster
 	tfBroadcasterPtr.reset(new tf::TransformBroadcaster());
