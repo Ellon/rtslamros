@@ -112,7 +112,7 @@ bool demo_slam_simple_init()
 	if(rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) mode = jafar::rtslam::hardware::mOffline;
 	else{
 		if(rtslamoptions::dump) mode = jafar::rtslam::hardware::mOnlineDump;
-		else mode = jafar::rtslam::hardware::mOnlineDump;
+		else mode = jafar::rtslam::hardware::mOnline;
 	}
 
 	// Unset to be used later on main
