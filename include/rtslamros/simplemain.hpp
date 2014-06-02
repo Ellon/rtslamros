@@ -234,7 +234,7 @@ bool demo_slam_simple_init()
 
 	senPtr11->setIntegrationPolicy(false);
 	senPtr11->setUseForInit(false);
-	senPtr11->setNeedInit(true); // for auto exposure
+	senPtr11->setNeedInit(true); // To wait until the topic is ready
 
 	// b. Create data manager.
 	boost::shared_ptr<ActiveSearchGrid> asGrid(new ActiveSearchGrid(configSetup.CAMERA_IMG_WIDTH, configSetup.CAMERA_IMG_HEIGHT, configEstimation.GRID_HCELLS, configEstimation.GRID_VCELLS, configEstimation.GRID_MARGIN, configEstimation.GRID_SEPAR));
@@ -445,6 +445,31 @@ void demo_slam_simple_main(world_ptr_t *world)
 			if ((*senIter)->getNeedInit())
 			{ has_init = true; (*senIter)->start(); }
 		}
+	}
+
+	// If we're online, wait here until for the topics to start to be published.
+	// Obs: the ROS hardware will set "initialized" flag when they start receiving data from topic.
+	if (has_init && (rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam))
+	{
+		std::cout << "Waiting for the topics to be published..." << std::flush;
+		bool imu_ok = false, camera_ok = false;
+		while(!imu_ok && !camera_ok) {
+			for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
+				 robIter != mapPtr->robotList().end(); ++robIter) {
+				if ((*robIter)->hardwareEstimatorPtr->initialized()) imu_ok = true; // IMU is OK
+				camera_ok = true; // Set here and unset if any of the sensors are not initialized
+				for (RobotAbstract::SensorList::iterator senIter = (*robIter)->sensorList().begin();
+					 senIter != (*robIter)->sensorList().end(); ++senIter) {
+					// Need to check sensor kind and cast to correct sensor to access the hardware pointer.
+					if ((*senIter)->kind == SensorAbstract::EXTEROCEPTIVE)
+					{
+						sensorext_ptr_t senPtr = SPTR_CAST<SensorExteroAbstract>(*senIter);
+						if (!senPtr->hardwareSensorPtr->initialized()) camera_ok = false; // At least one sensor is not OK
+					}
+				}
+			}
+		}
+		std::cout << " done." << std::endl;
 	}
 
 	// start other hardware sensors that doesn't need initialization

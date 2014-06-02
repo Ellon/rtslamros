@@ -62,7 +62,6 @@ void HardwareSensorMtiRos::preloadTask(void)
 	if (mode == mOffline) log.openRead("MTI", dump_path, format, size);
 
 	ros::Subscriber sub;
-	bool has_publisher = false;
 	// imu topic is set to "imu". Remap it to your topic name with
 	//     imu:=/your/topic/name
 	// in command line or
@@ -84,10 +83,10 @@ void HardwareSensorMtiRos::preloadTask(void)
 		} else
 		{
 			// Wait until has a publisher and set the has_publisher flag once got one publisher.
-			if(!has_publisher && sub.getNumPublishers() == 0) continue; else has_publisher = true;
+			if(!initialized_ && sub.getNumPublishers() == 0) continue; else initialized_ = true;
 
 			// Verify if the publisher finished and then finish too.
-			if(has_publisher && sub.getNumPublishers() == 0 && imu_callback_queue.empty()){
+			if(initialized_ && sub.getNumPublishers() == 0 && imu_callback_queue.empty()){
 				std::cout << "No more publishers. Stopping IMU..." << std::endl;
 				no_more_data = true; stopping = true; break;
 			}
@@ -136,6 +135,7 @@ HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condi
 //	}
 
 	nh.setCallbackQueue(&imu_callback_queue);
+	initialized_ = false; // Needed to wait for the topics to be published.
 }
 
 HardwareSensorMtiRos::~HardwareSensorMtiRos()
