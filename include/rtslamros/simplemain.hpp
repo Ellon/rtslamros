@@ -431,6 +431,18 @@ void demo_slam_simple_main(world_ptr_t *world)
 	map_ptr_t mapPtr = (*world)->mapList().front(); // We only have one map
 	robot_ptr_t robotPtr = mapPtr->robotList().front(); // We only have one robot
 
+	// Wait for display to be ready if enabled
+	if (rtslamoptions::dispQt || rtslamoptions::dispGdhe)
+	{
+		boost::unique_lock<boost::mutex> display_lock(worldPtr->display_mutex);
+		worldPtr->display_rendered = false;
+		display_lock.unlock();
+		worldPtr->display_condition.notify_all();
+		display_lock.lock();
+		while(!worldPtr->display_rendered) worldPtr->display_condition.wait(display_lock);
+		display_lock.unlock();
+	}
+
 	// Set the signal catcher. Allows proper finalization of RT-SLAM in a event
 	// of a signal being raised (like a stop by interruption with Ctrl-C).
 	set_signals(signal_catcher);
