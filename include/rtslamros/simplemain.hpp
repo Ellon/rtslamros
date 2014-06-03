@@ -610,7 +610,13 @@ void demo_slam_simple_main(world_ptr_t *world)
 				}
 
 				// Process data from the camera until the time the next date will arrive.
-				pinfo.sen->process(pinfo.id, pinfo.date_next);
+				/** \note The process call with date_next is only enabled in main.hpp if REAL_TIME_LIVE_RUN is
+				 *  defined, which is not set by default. Also, we're not sure we're seting the pinfo.date_next
+				 *  properly (specially when running from bag files) so we're using the other version here which
+				 *  does notlimit the processing in time (using -1 instead of pinfo.date_next).
+				 */
+				pinfo.sen->process(pinfo.id, -1.);
+
 
 				// Set which sensor was updated last
 				pinfo.sen->robotPtr()->last_updated = pinfo.sen;
