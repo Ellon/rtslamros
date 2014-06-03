@@ -111,7 +111,7 @@ bool demo_slam_simple_init()
 	/// \warning I have no idea if the lines below are correct
 	if(rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) mode = jafar::rtslam::hardware::mOffline;
 	else{
-		if(rtslamoptions::dump) mode = jafar::rtslam::hardware::mOnlineDump;
+		if(rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered) mode = jafar::rtslam::hardware::mOnlineDump;
 		else mode = jafar::rtslam::hardware::mOnline;
 	}
 
@@ -139,7 +139,8 @@ bool demo_slam_simple_init()
 	unsigned rseed = jmath::get_srand();
 	if (rtslamoptions::randomseed != rtslamoptions::seedGenerate && rtslamoptions::randomseed != rtslamoptions::seedUseSaved)
 		rseed = rtslamoptions::randomseed;
-	if ((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) && rtslamoptions::dump) {
+	if ((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+		&& rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered) {
 		std::fstream f((rtslamoptions::datapath + std::string("/rseed.log")).c_str(), std::ios_base::out);
 		f << rseed << std::endl;
 		f.close();
@@ -243,7 +244,7 @@ bool demo_slam_simple_init()
 	boost::shared_ptr<DescriptorFactoryAbstract> pointDescFactory(new DescriptorImagePointFirstViewFactory(configEstimation.DESC_SIZE));
 	boost::shared_ptr<ImagePointHarrisDetector> harrisDetector(new ImagePointHarrisDetector(configEstimation.HARRIS_CONV_SIZE, configEstimation.HARRIS_TH, configEstimation.HARRIS_EDDGE, configEstimation.PATCH_SIZE, configEstimation.PIX_NOISE, pointDescFactory));
 	boost::shared_ptr<ImagePointZnccMatcher> znccMatcher(new ImagePointZnccMatcher(configEstimation.MIN_SCORE, configEstimation.PARTIAL_POSITION, configEstimation.PATCH_SIZE, configEstimation.MAX_SEARCH_SIZE, configEstimation.RANSAC_LOW_INNOV, configEstimation.MATCH_TH, configEstimation.HI_MATCH_TH, configEstimation.HI_LIMIT, configEstimation.MAHALANOBIS_TH, configEstimation.RELEVANCE_TH, configEstimation.PIX_NOISE));
-	boost::shared_ptr<DataManager_ImagePoint_Ransac> dmPt11(new DataManager_ImagePoint_Ransac(harrisDetector, znccMatcher, asGrid, configEstimation.N_UPDATES_TOTAL, configEstimation.N_UPDATES_RANSAC, configEstimation.RANSAC_NTRIES, configEstimation.N_INIT, configEstimation.N_RECOMP_GAINS, configEstimation.MULTIPLE_DEPTH_HYPOS, loggerTask.get()));
+	boost::shared_ptr<DataManager_ImagePoint_Ransac> dmPt11(new DataManager_ImagePoint_Ransac(harrisDetector, znccMatcher, asGrid, configEstimation.N_UPDATES_TOTAL, configEstimation.N_UPDATES_RANSAC, configEstimation.RANSAC_NTRIES, configEstimation.N_INIT, configEstimation.N_RECOMP_GAINS, configEstimation.MULTIPLE_DEPTH_HYPOS, (rtslamoptions::dump == rtslamoptions::dumpMatches ? loggerTask.get() : NULL)));
 
 	dmPt11->linkToParentSensorSpec(senPtr11);
 	dmPt11->linkToParentMapManager(mmPoint);
@@ -261,7 +262,7 @@ bool demo_slam_simple_init()
 		sensorManager.reset(new SensorManagerOffline(mapPtr));
 	else if (rtslamoptions::replay == rtslamoptions::rOfflineReplay)
 		sensorManager.reset(new SensorManagerOffline(mapPtr, rtslamoptions::datapath)); // data path to replay data offline
-	else if(rtslamoptions::dump)
+	else if(rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered)
 		sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get())); // datapath to dump
 	else
 		sensorManager.reset(new SensorManagerOnline(mapPtr, "", loggerTask.get())); // empty datapath to disable dumping.
@@ -501,7 +502,7 @@ void demo_slam_simple_main(world_ptr_t *world)
 	// Set the start date according to the options
 	double start_date = kernel::Clock::getTime();
 	// If online and dumping, write start date on file
-	if((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) && rtslamoptions::dump)
+	if((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) && rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered)
 	{
 		std::fstream f((rtslamoptions::datapath + std::string("/sdate.log")).c_str(), std::ios_base::out);
 		f << std::setprecision(19) << start_date << std::endl;
@@ -813,7 +814,7 @@ void demo_slam_simple_display(world_ptr_t *world)
 #endif
 
 		// Dump rendered views if we are in any offline mode and with dump on.
-		if ((rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) && rtslamoptions::dump && (*world)->display_t+1 != 0)
+		if ((rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) && rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered && (*world)->display_t+1 != 0)
 		{
 #ifdef HAVE_MODULE_QDISPLAY
 			if (rtslamoptions::dispQt)
