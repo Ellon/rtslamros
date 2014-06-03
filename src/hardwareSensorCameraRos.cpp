@@ -44,7 +44,6 @@ void HardwareSensorCameraRos::callback(const sensor_msgs::Image& msg)
 	callback_img->timestamp = msg.header.stamp.toSec();
 	callback_img->arrival = kernel::Clock::getTime();
 
-	if (index == 0) { this->timestamps_correction = callback_img->arrival - callback_img->timestamp; }
 }
 
 

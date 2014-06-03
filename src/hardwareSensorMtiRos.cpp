@@ -48,10 +48,6 @@ void HardwareSensorMtiRos::callback(const sensor_msgs::Imu& msg)
 
 	mti_count = msg.header.seq;
 
-	// set timestamps correction if it's the first callback
-	if(index == 0) {this->timestamps_correction = reading.arrival - reading.data(0);}
-	index++;
-
 }
 
 void HardwareSensorMtiRos::preloadTask(void)
@@ -118,7 +114,7 @@ HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condi
 										   double trigger_freq, double trigger_shutter, int bufferSize_, Mode mode, std::string dump_path,
 										   kernel::LoggerTask *loggerTask):
 	HardwareSensorProprioAbstract(condition, mode, bufferSize_, ctNone),
-	/*tightly_synchronized(false), */ dump_path(dump_path), loggerTask(loggerTask), index(0)
+	/*tightly_synchronized(false), */ dump_path(dump_path), loggerTask(loggerTask)
 {
 	if (mode == mOnlineDump && !loggerTask) JFR_ERROR(RtslamException, rtslam::RtslamException::GENERIC_ERROR, "HardwareSensorMtiRos: you must provide a loggerTask if you want to dump data.");
 	addQuantity(qAcc);
