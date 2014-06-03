@@ -448,6 +448,15 @@ void demo_slam_simple_main(world_ptr_t *world)
 	// of a signal being raised (like a stop by interruption with Ctrl-C).
 	set_signals(signal_catcher);
 
+	// Wait until we set up the time.
+	// Obs: It should only stop here if we're playing data from ROS bags and rosparam /use_sim_time is set
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+	{
+		std::cout << "Waiting for the ROS clock time..." << std::flush;
+		while(ros::Time::now().isZero()) { ros::spinOnce(); }
+		std::cout << "ok." << std::endl;
+	}
+
 	// Start hardware sensors that need long init
 	bool has_init = false;
 	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
