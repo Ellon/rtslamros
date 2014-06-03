@@ -325,6 +325,12 @@ int parse_options(int ac, char* av[])
 						  << rOffline << " or " << rOfflineReplay << std::endl;
 				exit(1);
 			}
+			/// \note There's a bug when replaying with no slam and dumping. Since we process_fake, we do not set last_updated on robotPtr and then it causes a segfaut when logging. Need to investigate if it also happens on RT-SLAM demo.
+			if(replay == rOnlineNoSlam && dump == dumpSensorsOrRendered){
+				std::cerr << "Error: There's a bug when using --dump=" << dumpSensorsOrRendered
+						  << " and --replay=" << rOnlineNoSlam << ". These options are not available until we fix the bug." << std::endl;
+				exit(1);
+			}
 		}
 
 		if (vm.count("log-file"))
