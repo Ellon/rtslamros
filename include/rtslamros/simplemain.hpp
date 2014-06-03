@@ -475,6 +475,9 @@ void demo_slam_simple_main(world_ptr_t *world)
 	// Obs: the ROS hardware will set "initialized" flag when they start receiving data from topic.
 	if (has_init && (rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam))
 	{
+		std::cout << "Sensors are calibrating... DON'T MOVE THE SYSTEM!!" << std::flush;
+		sleep(2);
+		std::cout << " done." << std::endl;
 		std::cout << "Waiting for the topics to be published..." << std::flush;
 		bool imu_ok = false, camera_ok = false;
 		while(!imu_ok && !camera_ok) {
