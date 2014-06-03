@@ -509,7 +509,11 @@ void demo_slam_simple_main(world_ptr_t *world)
 	}
 
 	// Set the start date according to the options
-	double start_date = kernel::Clock::getTime();
+	double start_date;
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+		start_date = ros::Time::now().toSec();
+	else
+		start_date = kernel::Clock::getTime();
 	// If online and dumping, write start date on file
 	if((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) && rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered)
 	{
