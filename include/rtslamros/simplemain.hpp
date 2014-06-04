@@ -109,10 +109,10 @@ bool demo_slam_simple_init()
 	// Set the mode based on the options.
 	/// \todo I feel a mixing between mode and replay/dump variables... it should be clarified and maybe the mode could be set directly by the user, and the program would stop if the combinations of modes are not allowed.
 	/// \warning I have no idea if the lines below are correct
-	if(rtslamoptions::replay == 1 || rtslamoptions::replay == 3) mode = jafar::rtslam::hardware::mOffline;
+	if(rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) mode = jafar::rtslam::hardware::mOffline;
 	else{
-		if(rtslamoptions::dump) mode = jafar::rtslam::hardware::mOnlineDump;
-		else mode = jafar::rtslam::hardware::mOnlineDump;
+		if(rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered) mode = jafar::rtslam::hardware::mOnlineDump;
+		else mode = jafar::rtslam::hardware::mOnline;
 	}
 
 	// Unset to be used later on main
@@ -121,15 +121,38 @@ bool demo_slam_simple_init()
 	/// ---------------------------------------------------------------------------
 	/// --- INIT LOGGER -----------------------------------------------------------
 	/// ---------------------------------------------------------------------------
+	// We will have a logger task if we have a log file or we're dumping information
 	if (!rtslamoptions::logfile.empty() || rtslamoptions::dump)
 		loggerTask.reset(new kernel::LoggerTask(NICENESS));
 
+	// If we have a log file, open and initialize it (write some stuff).
 	if (!rtslamoptions::logfile.empty()) {
 		dataLogger.reset(new kernel::DataLogger(rtslamoptions::logfile));
 		dataLogger->setLoggerTask(loggerTask.get());
 		dataLogger->writeCurrentDate();
 		dataLogger->writeNewLine();
 	}
+
+	/// ---------------------------------------------------------------------------
+	/// --- LOAD RANDOM SEED ------------------------------------------------------
+	/// ---------------------------------------------------------------------------
+	unsigned rseed = jmath::get_srand();
+	if (rtslamoptions::randomseed != rtslamoptions::seedGenerate && rtslamoptions::randomseed != rtslamoptions::seedUseSaved)
+		rseed = rtslamoptions::randomseed;
+	if ((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+		&& rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered) {
+		std::fstream f((rtslamoptions::datapath + std::string("/rseed.log")).c_str(), std::ios_base::out);
+		f << rseed << std::endl;
+		f.close();
+	}
+	else if (rtslamoptions::replay == rtslamoptions::rOffline && rtslamoptions::randomseed == rtslamoptions::seedUseSaved) {
+		std::fstream f((rtslamoptions::datapath + std::string("/rseed.log")).c_str(), std::ios_base::in);
+		f >> rseed;
+		f.close();
+	}
+	std::cout << "Random seed " << rseed << std::endl;
+	rtslam::srand(rseed);
+
 
 	/// ---------------------------------------------------------------------------
 	/// --- INIT WORLD ------------------------------------------------------------
@@ -179,7 +202,6 @@ bool demo_slam_simple_init()
 	robPtr1->perturbation.set_std_continuous(pertStd);
 
 	boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1(new rtslamros::hardware::HardwareSensorMtiRos(&estimatordata_condition,
-																														configSetup.MTI_DEVICE,
 																														TRIGGER_OPTION, FREQ_OPTION, SHUTTER_OPTION, ///< \todo Verify if trigger, freq and shutter are important when reading data from ROS topics.
 																														MTI_BUFFER_SIZE, mode, rtslamoptions::datapath,
 																														loggerTask.get()));
@@ -215,14 +237,14 @@ bool demo_slam_simple_init()
 
 	senPtr11->setIntegrationPolicy(false);
 	senPtr11->setUseForInit(false);
-	senPtr11->setNeedInit(true); // for auto exposure
+	senPtr11->setNeedInit(true); // To wait until the topic is ready
 
 	// b. Create data manager.
 	boost::shared_ptr<ActiveSearchGrid> asGrid(new ActiveSearchGrid(configSetup.CAMERA_IMG_WIDTH, configSetup.CAMERA_IMG_HEIGHT, configEstimation.GRID_HCELLS, configEstimation.GRID_VCELLS, configEstimation.GRID_MARGIN, configEstimation.GRID_SEPAR));
 	boost::shared_ptr<DescriptorFactoryAbstract> pointDescFactory(new DescriptorImagePointFirstViewFactory(configEstimation.DESC_SIZE));
 	boost::shared_ptr<ImagePointHarrisDetector> harrisDetector(new ImagePointHarrisDetector(configEstimation.HARRIS_CONV_SIZE, configEstimation.HARRIS_TH, configEstimation.HARRIS_EDDGE, configEstimation.PATCH_SIZE, configEstimation.PIX_NOISE, pointDescFactory));
 	boost::shared_ptr<ImagePointZnccMatcher> znccMatcher(new ImagePointZnccMatcher(configEstimation.MIN_SCORE, configEstimation.PARTIAL_POSITION, configEstimation.PATCH_SIZE, configEstimation.MAX_SEARCH_SIZE, configEstimation.RANSAC_LOW_INNOV, configEstimation.MATCH_TH, configEstimation.HI_MATCH_TH, configEstimation.HI_LIMIT, configEstimation.MAHALANOBIS_TH, configEstimation.RELEVANCE_TH, configEstimation.PIX_NOISE));
-	boost::shared_ptr<DataManager_ImagePoint_Ransac> dmPt11(new DataManager_ImagePoint_Ransac(harrisDetector, znccMatcher, asGrid, configEstimation.N_UPDATES_TOTAL, configEstimation.N_UPDATES_RANSAC, configEstimation.RANSAC_NTRIES, configEstimation.N_INIT, configEstimation.N_RECOMP_GAINS, configEstimation.MULTIPLE_DEPTH_HYPOS, loggerTask.get()));
+	boost::shared_ptr<DataManager_ImagePoint_Ransac> dmPt11(new DataManager_ImagePoint_Ransac(harrisDetector, znccMatcher, asGrid, configEstimation.N_UPDATES_TOTAL, configEstimation.N_UPDATES_RANSAC, configEstimation.RANSAC_NTRIES, configEstimation.N_INIT, configEstimation.N_RECOMP_GAINS, configEstimation.MULTIPLE_DEPTH_HYPOS, (rtslamoptions::dump == rtslamoptions::dumpMatches ? loggerTask.get() : NULL)));
 
 	dmPt11->linkToParentSensorSpec(senPtr11);
 	dmPt11->linkToParentMapManager(mmPoint);
@@ -235,13 +257,15 @@ bool demo_slam_simple_init()
 	senPtr11->setHardwareSensor(hardSen11);
 
 	// Create sensor manager
-	if(mode == rtslam::hardware::mOffline)
-		sensorManager.reset(new SensorManagerOffline(mapPtr, "")); ///< \todo Check what's the difference between passing or the data path as the second argument
+	// Obs: Offline has no logger task;
+	if(rtslamoptions::replay == rtslamoptions::rOffline)
+		sensorManager.reset(new SensorManagerOffline(mapPtr));
+	else if (rtslamoptions::replay == rtslamoptions::rOfflineReplay)
+		sensorManager.reset(new SensorManagerOffline(mapPtr, rtslamoptions::datapath)); // data path to replay data offline
+	else if(rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered)
+		sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get())); // datapath to dump
 	else
-		if(rtslamoptions::dump)
-			sensorManager.reset(new SensorManagerOnline(mapPtr, rtslamoptions::datapath, loggerTask.get())); // pass datapath to dump
-		else
-			sensorManager.reset(new SensorManagerOnline(mapPtr, "", loggerTask.get())); // pass empty datapath to disable dumping.
+		sensorManager.reset(new SensorManagerOnline(mapPtr, "", loggerTask.get())); // empty datapath to disable dumping.
 
 	// Initialize the tf broadcaster
 	tfBroadcasterPtr.reset(new tf::TransformBroadcaster());
@@ -408,9 +432,30 @@ void demo_slam_simple_main(world_ptr_t *world)
 	map_ptr_t mapPtr = (*world)->mapList().front(); // We only have one map
 	robot_ptr_t robotPtr = mapPtr->robotList().front(); // We only have one robot
 
+	// Wait for display to be ready if enabled
+	if (rtslamoptions::dispQt || rtslamoptions::dispGdhe)
+	{
+		boost::unique_lock<boost::mutex> display_lock(worldPtr->display_mutex);
+		worldPtr->display_rendered = false;
+		display_lock.unlock();
+		worldPtr->display_condition.notify_all();
+		display_lock.lock();
+		while(!worldPtr->display_rendered) worldPtr->display_condition.wait(display_lock);
+		display_lock.unlock();
+	}
+
 	// Set the signal catcher. Allows proper finalization of RT-SLAM in a event
 	// of a signal being raised (like a stop by interruption with Ctrl-C).
 	set_signals(signal_catcher);
+
+	// Wait until we set up the time.
+	// Obs: It should only stop here if we're playing data from ROS bags and rosparam /use_sim_time is set
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+	{
+		std::cout << "Waiting for the ROS clock time..." << std::flush;
+		while(ros::Time::now().isZero()) { ros::spinOnce(); }
+		std::cout << "ok." << std::endl;
+	}
 
 	// Start hardware sensors that need long init
 	bool has_init = false;
@@ -426,6 +471,34 @@ void demo_slam_simple_main(world_ptr_t *world)
 		}
 	}
 
+	// If we're online, wait here until for the topics to start to be published.
+	// Obs: the ROS hardware will set "initialized" flag when they start receiving data from topic.
+	if (has_init && (rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam))
+	{
+		std::cout << "Sensors are calibrating... DON'T MOVE THE SYSTEM!!" << std::flush;
+		sleep(2);
+		std::cout << " done." << std::endl;
+		std::cout << "Waiting for the topics to be published..." << std::flush;
+		bool imu_ok = false, camera_ok = false;
+		while(!imu_ok && !camera_ok) {
+			for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
+				 robIter != mapPtr->robotList().end(); ++robIter) {
+				if ((*robIter)->hardwareEstimatorPtr->initialized()) imu_ok = true; // IMU is OK
+				camera_ok = true; // Set here and unset if any of the sensors are not initialized
+				for (RobotAbstract::SensorList::iterator senIter = (*robIter)->sensorList().begin();
+					 senIter != (*robIter)->sensorList().end(); ++senIter) {
+					// Need to check sensor kind and cast to correct sensor to access the hardware pointer.
+					if ((*senIter)->kind == SensorAbstract::EXTEROCEPTIVE)
+					{
+						sensorext_ptr_t senPtr = SPTR_CAST<SensorExteroAbstract>(*senIter);
+						if (!senPtr->hardwareSensorPtr->initialized()) camera_ok = false; // At least one sensor is not OK
+					}
+				}
+			}
+		}
+		std::cout << " done." << std::endl;
+	}
+
 	// start other hardware sensors that doesn't need initialization
 	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
 		 robIter != mapPtr->robotList().end(); ++robIter)
@@ -438,12 +511,25 @@ void demo_slam_simple_main(world_ptr_t *world)
 		}
 	}
 
-	// Set the start date
-	double start_date = kernel::Clock::getTime();
+	// Set the start date according to the options
+	double start_date;
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+		start_date = ros::Time::now().toSec();
+	else
+		start_date = kernel::Clock::getTime();
+	// If online and dumping, write start date on file
+	if((rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) && rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered)
 	{
-		// Save the start data in a log file
-		std::fstream f((std::string(rtslamoptions::datapath) + std::string("/sdate.log")).c_str(), std::ios_base::out);
+		std::fstream f((rtslamoptions::datapath + std::string("/sdate.log")).c_str(), std::ios_base::out);
 		f << std::setprecision(19) << start_date << std::endl;
+		f.close();
+	}
+	// If offline, read start date from sdate.log file. Returns in case of error.
+	else if (rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay)
+	{
+		std::fstream f((rtslamoptions::datapath + std::string("/sdate.log")).c_str(), std::ios_base::in);
+		if (!f.is_open()) { std::cout << "Missing sdate.log file. Please copy the .time file of the first image to sdate.log" << std::endl; return; }
+		f >> start_date;
 		f.close();
 	}
 	// Set the start date in the sensor manager
@@ -479,56 +565,67 @@ void demo_slam_simple_main(world_ptr_t *world)
 			// Get the robot that owns the sensor. Normally not needed because we only have one robot in this demo
 			robot_ptr_t robPtr = pinfo.sen->robotPtr();
 
-			double newt = pinfo.date;
+			// If we're not doing slam, fake the processing of the image if not go through the normal process.
+			if(rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+				pinfo.sen->process_fake(pinfo.id,true);
+			else {
+				double newt = pinfo.date;
 
-			// wait to have all the estimator data (ie one after newt) to do this move,
-			// or it can cause trouble if there are two many missing data,
-			// and it ensures offline repeatability, and quality will be better
-			// TODO be smarter and choose an older data if possible
-			bool waited = false;
-			double wait_time;
-			estimatordata_condition.set(0);
-			double start_date = kernel::Clock::getTime();
-			double waitedmove_date = start_date;
-			bool stop = false;
-			while (!robPtr->move(newt)) // Acumulates the estimator data until after the time the data from the camera arrived
-			{
-				// This block waits for more data to arrive to the IMU and measures the time spent waiting for new data
-				if (!waited) wait_time = kernel::Clock::getTime();
-				waited = true;
-				if (robPtr->hardwareEstimatorPtr->stopped()) { stop = true; break; }
-				estimatordata_condition.wait(boost::lambda::_1 != 0);
+				// wait to have all the estimator data (ie one after newt) to do this move,
+				// or it can cause trouble if there are two many missing data,
+				// and it ensures offline repeatability, and quality will be better
+				// TODO be smarter and choose an older data if possible
+				bool waited = false;
+				double wait_time;
 				estimatordata_condition.set(0);
-				waitedmove_date = kernel::Clock::getTime();
-			}
-			double moved_date = kernel::Clock::getTime();
-			if (stop) // Stop if there was no IMU data
-			{
-				std::cout << "No more estimator data, stopping." << std::endl;
-				break;
-			}
-			if (waited) // If had to wait for the IMU, print the wa(i|s)ted time
-			{
-				wait_time = kernel::Clock::getTime() - wait_time;
-				/*if (wait_time > 0.001)*/ std::cout << "wa(i|s)ted " << wait_time << " for estimator data" << std::endl;
-			}
+				double start_date = kernel::Clock::getTime();
+				double waitedmove_date = start_date;
+				bool stop = false;
+				while (!robPtr->move(newt)) // Acumulates the estimator data until after the time the data from the camera arrived
+				{
+					// This block waits for more data to arrive to the IMU and measures the time spent waiting for new data
+					if (!waited) wait_time = kernel::Clock::getTime();
+					waited = true;
+					if (robPtr->hardwareEstimatorPtr->stopped()) { stop = true; break; }
+					estimatordata_condition.wait(boost::lambda::_1 != 0);
+					estimatordata_condition.set(0);
+					waitedmove_date = kernel::Clock::getTime();
+				}
+				double moved_date = kernel::Clock::getTime();
+				if (stop) // Stop if there was no IMU data
+				{
+					std::cout << "No more estimator data, stopping." << std::endl;
+					break;
+				}
+				if (waited) // If had to wait for the IMU, print the wa(i|s)ted time
+				{
+					wait_time = kernel::Clock::getTime() - wait_time;
+					/*if (wait_time > 0.001)*/ std::cout << "wa(i|s)ted " << wait_time << " for estimator data" << std::endl;
+				}
 
-			if (!ready && sensorManager->allInit())
-			{ // here to ensure that at least one move has been done (to init estimator)
+				if (!ready && sensorManager->allInit())
+				{ // here to ensure that at least one move has been done (to init estimator)
+					robPtr->reinit_extrapolate();
+					ready = true;
+				}
+
+				// Process data from the camera until the time the next date will arrive.
+				/** \note The process call with date_next is only enabled in main.hpp if REAL_TIME_LIVE_RUN is
+				 *  defined, which is not set by default. Also, we're not sure we're seting the pinfo.date_next
+				 *  properly (specially when running from bag files) so we're using the other version here which
+				 *  does notlimit the processing in time (using -1 instead of pinfo.date_next).
+				 */
+				pinfo.sen->process(pinfo.id, -1.);
+
+
+				// Set which sensor was updated last
+				pinfo.sen->robotPtr()->last_updated = pinfo.sen;
+
 				robPtr->reinit_extrapolate();
-				ready = true;
+				double processed_date = kernel::Clock::getTime();
+
+				sensorManager->logData(pinfo.sen, start_date, waitedmove_date, moved_date, processed_date);
 			}
-
-			// Process data from the camera until the time the next date will arrive.
-			pinfo.sen->process(pinfo.id, pinfo.date_next);
-
-			// Set which sensor was updated last
-			pinfo.sen->robotPtr()->last_updated = pinfo.sen;
-
-			robPtr->reinit_extrapolate();
-			double processed_date = kernel::Clock::getTime();
-
-			sensorManager->logData(pinfo.sen, start_date, waitedmove_date, moved_date, processed_date);
 			filterTime = robPtr->self_time;
 
 			// Broadcast current estimation on /tf topic
@@ -739,9 +836,7 @@ void demo_slam_simple_display(world_ptr_t *world)
 #endif
 
 		// Dump rendered views if we are in any offline mode and with dump on.
-		//            offline                      offline replay
-		//           vvvvvvvvv                    vvvvvvvvvvvvvvvv
-		if ((rtslamoptions::replay == 1 || rtslamoptions::replay == 3) && rtslamoptions::dump && (*world)->display_t+1 != 0)
+		if ((rtslamoptions::replay == rtslamoptions::rOffline || rtslamoptions::replay == rtslamoptions::rOfflineReplay) && rtslamoptions::dump == rtslamoptions::dumpSensorsOrRendered && (*world)->display_t+1 != 0)
 		{
 #ifdef HAVE_MODULE_QDISPLAY
 			if (rtslamoptions::dispQt)

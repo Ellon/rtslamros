@@ -44,7 +44,6 @@ void HardwareSensorCameraRos::callback(const sensor_msgs::Image& msg)
 	callback_img->timestamp = msg.header.stamp.toSec();
 	callback_img->arrival = kernel::Clock::getTime();
 
-	if (index == 0) { this->timestamps_correction = callback_img->arrival - callback_img->timestamp; }
 }
 
 
@@ -69,18 +68,22 @@ void HardwareSensorCameraRos::preloadTask(void)
 	/// @todo Maybe change to CameraSubscriber (from image_transport)
 	ros::Subscriber sub;
 
-	bool has_publisher = false;
+	// the image topic is set to "image_raw". Remap it to your topic name with
+	//     image_raw:=/your/topic/name
+	// in command line or
+	//     <remap from="image_raw" to="/your/topic/name"/>
+	// in the launch file
 	if(mode != mOffline)
-		sub = nh.subscribe("/uav0/camera/0/image_raw", 500, &HardwareSensorCameraRos::callback, this);
+		sub = nh.subscribe("image_raw", 500, &HardwareSensorCameraRos::callback, this);
 
 	while(!stopping)
 	{
 
 		// Wait until has a publisher and set the has_publisher flag once got one publisher.
-		if(!has_publisher && sub.getNumPublishers() == 0) continue; else has_publisher = true;
+		if(!initialized_ && sub.getNumPublishers() == 0) continue; else initialized_ = true;
 
 		// Verify if the publisher finished and then finish too.
-		if(has_publisher && sub.getNumPublishers() == 0 && camera_callback_queue.empty()){
+		if(initialized_ && sub.getNumPublishers() == 0 && camera_callback_queue.empty()){
 			std::cout << "No more publishers. Stopping camera..." << std::endl;
 			no_more_data = true; stopping = true; break;
 		}
@@ -123,6 +126,7 @@ void HardwareSensorCameraRos::preloadTask(void)
 	{
 		HardwareSensorCamera::init(mode,dump_path,imgSize);
 		nh.setCallbackQueue(&camera_callback_queue);
+		initialized_ = false; // Needed to wait for the topics to be published.
 	}
 
 

@@ -27,7 +27,6 @@ class ConfigSetup
 
 	/// INERTIAL (also using UNCERT_VLIN)
 	double UNCERT_VLIN;        ///< initial uncertainty stdev on linear velocity (m/s)
-	std::string MTI_DEVICE;    ///< IMU device
 	double ACCELERO_FULLSCALE; ///< full scale of accelerometers (m/s2)  (MTI: 17)
 	double ACCELERO_NOISE;     ///< noise stdev of accelerometers (m/s2) (MTI: 0.002*sqrt(30) )
 	double GYRO_FULLSCALE;     ///< full scale of gyrometers (rad/s)     (MTI: rad(300) )
@@ -108,6 +107,25 @@ namespace rtslamoptions{
 
 /// \todo Create enumerations here for the int options to help checking for options in the main code
 
+// Replay enumeration
+enum {
+	rOnline = 0,
+	rOffline,
+	rOnlineNoSlam,
+	rOfflineReplay
+};
+// Random Seed enumeration
+enum {
+	seedGenerate = 0,
+	seedUseSaved
+};
+// Dump enumeration
+enum {
+	dumpOff = 0,
+	dumpSensorsOrRendered,
+	dumpMatches
+};
+
 // List of variables set by the command line arguments and config file
 std::string logfile;
 std::string datapath;
@@ -116,7 +134,8 @@ bool dispGdhe;
 unsigned pause;
 bool renderall;
 unsigned replay;
-bool dump;
+unsigned dump;
+unsigned randomseed;
 
 
 // parser function
@@ -139,18 +158,41 @@ int parse_options(int ac, char* av[])
 				("config,c", po::value<string>(&config_file),"name of a file of a configuration.")
 				;
 
+		// Mount the description string of replay option.
+		std::stringstream replay_ss;
+		replay_ss << std::string("replay mode: '")
+				  << rOnline << std::string("' for online, '")
+				  << rOffline << std::string("' for offline, '")
+				  << rOnlineNoSlam << std::string("' for online no slam, '")
+				  << rOfflineReplay << std::string("' for offline replay");
+
+		// Mount the description string of random seed
+		std::stringstream seed_ss;
+		seed_ss << std::string("randon seed: '")
+				  << seedGenerate << std::string("' generate a new one, '")
+				  << seedUseSaved << std::string("' use a saved one, '")
+				  << std::string("'n' uses n as a new seed");
+
+		// Mount the description string of random seed
+		std::stringstream dump_ss;
+		dump_ss << std::string("dump data: '")
+				  << dumpOff << std::string("' do not dump, '")
+				  << dumpSensorsOrRendered << std::string("' dump images or rendered views, '")
+				  << dumpMatches << std::string("' dump matches'");
+
 		// Declare a group of options that will be allowed both on
 		// command line and in config file
 		po::options_description config("Configuration");
 		config.add_options()
-				("replay", po::value<unsigned>(&replay)->default_value(0), "replay mode: '0' for online, '1' for offline, '2' for online no slam, '3' for offline replay")
+				("replay", po::value<unsigned>(&replay)->default_value(rOnline), replay_ss.str().c_str())
+				("rand-seed", po::value<unsigned>(&randomseed)->default_value(seedGenerate), seed_ss.str().c_str())
 				("log-file", po::value<string>(&logfile)->default_value("rtslam.log"), "log result output in text file in --data-path")
 				("data-path", po::value<string>(&datapath)->default_value("."), "path to store or read data")
 				("disp-2d", po::value<bool>(&dispQt)->default_value(false), "use 2D display (Qt)")
 				("disp-3d", po::value<bool>(&dispGdhe)->default_value(false), "use 3D display (GDHE)")
 				("pause", po::value<unsigned>(&pause)->default_value(0), "pause after integrating data: '0' disables, 'n' pauses after frame n")
 				("render-all", po::value<bool>(&renderall)->default_value(false), "force rendering display for all frames")
-				("dump", po::value<bool>(&dump)->default_value(false), "dump images (with --replay=0/2) or rendered views (with --replay=1/3)") /// \warning Not sure of the behaviour with --replay=2/3
+				("dump", po::value<unsigned>(&dump)->default_value(dumpOff), dump_ss.str().c_str())
 				;
 
 		// Declare a group of hidden options, will be allowed both on command line and
@@ -167,7 +209,6 @@ int parse_options(int ac, char* av[])
 		        ("CAMERA_DISTORTION", po::value< jblas::vec3 >(&configSetup.CAMERA_DISTORTION), "distortion calibration parameters (r1,r2,r3)")
 		        ("CAMERA_CALIB", po::value< std::string >(&configSetup.CAMERA_CALIB), "calibration file if need to rectify")
 		        ("UNCERT_VLIN", po::value< double >(&configSetup.UNCERT_VLIN), "initial uncertainty stdev on linear velocity (m/s)")
-		        ("MTI_DEVICE", po::value< std::string >(&configSetup.MTI_DEVICE), "IMU device")
 		        ("ACCELERO_FULLSCALE", po::value< double >(&configSetup.ACCELERO_FULLSCALE), "full scale of accelerometers (m/s2)  (MTI: 17)")
 		        ("ACCELERO_NOISE", po::value< double >(&configSetup.ACCELERO_NOISE), "noise stdev of accelerometers (m/s2) (MTI: 0.002*sqrt(30) )")
 		        ("GYRO_FULLSCALE", po::value< double >(&configSetup.GYRO_FULLSCALE), "full scale of gyrometers (rad/s)     (MTI: rad(300) )")
@@ -274,6 +315,22 @@ int parse_options(int ac, char* av[])
 		// Exit here if any of these options where selected
 		if(vm.count("help") || vm.count("version") || vm.count("help-setup") || vm.count("help-estimation")) {
 			exit(0);
+		}
+
+		// Check for invalid options
+		if(vm.count("replay") && vm.count("dump"))
+		{
+			if((replay == rOnline || replay == rOnlineNoSlam) && dump == dumpMatches){
+				std::cerr << "Error: --dump=" << dumpMatches << " only valid with --replay="
+						  << rOffline << " or " << rOfflineReplay << std::endl;
+				exit(1);
+			}
+			/// \note There's a bug when replaying with no slam and dumping. Since we process_fake, we do not set last_updated on robotPtr and then it causes a segfaut when logging. Need to investigate if it also happens on RT-SLAM demo.
+			if(replay == rOnlineNoSlam && dump == dumpSensorsOrRendered){
+				std::cerr << "Error: There's a bug when using --dump=" << dumpSensorsOrRendered
+						  << " and --replay=" << rOnlineNoSlam << ". These options are not available until we fix the bug." << std::endl;
+				exit(1);
+			}
 		}
 
 		if (vm.count("log-file"))

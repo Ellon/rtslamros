@@ -48,10 +48,6 @@ void HardwareSensorMtiRos::callback(const sensor_msgs::Imu& msg)
 
 	mti_count = msg.header.seq;
 
-	// set timestamps correction if it's the first callback
-	if(index == 0) {this->timestamps_correction = reading.arrival - reading.data(0);}
-	index++;
-
 }
 
 void HardwareSensorMtiRos::preloadTask(void)
@@ -62,9 +58,13 @@ void HardwareSensorMtiRos::preloadTask(void)
 	if (mode == mOffline) log.openRead("MTI", dump_path, format, size);
 
 	ros::Subscriber sub;
-	bool has_publisher = false;
+	// imu topic is set to "imu". Remap it to your topic name with
+	//     imu:=/your/topic/name
+	// in command line or
+	//     <remap from="imu" to="/your/topic/name"/>
+	// in the launch file
 	if(mode != mOffline)
-		sub = nh.subscribe("/uav0/imu", 1024, &HardwareSensorMtiRos::callback, this);
+		sub = nh.subscribe("imu", 1024, &HardwareSensorMtiRos::callback, this);
 
 	while (!stopping)
 	{
@@ -79,10 +79,10 @@ void HardwareSensorMtiRos::preloadTask(void)
 		} else
 		{
 			// Wait until has a publisher and set the has_publisher flag once got one publisher.
-			if(!has_publisher && sub.getNumPublishers() == 0) continue; else has_publisher = true;
+			if(!initialized_ && sub.getNumPublishers() == 0) continue; else initialized_ = true;
 
 			// Verify if the publisher finished and then finish too.
-			if(has_publisher && sub.getNumPublishers() == 0 && imu_callback_queue.empty()){
+			if(initialized_ && sub.getNumPublishers() == 0 && imu_callback_queue.empty()){
 				std::cout << "No more publishers. Stopping IMU..." << std::endl;
 				no_more_data = true; stopping = true; break;
 			}
@@ -110,11 +110,11 @@ void HardwareSensorMtiRos::preloadTask(void)
 	JFR_GLOBAL_CATCH
 }
 
-HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, std::string topic, double trigger_mode,
+HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, double trigger_mode,
 										   double trigger_freq, double trigger_shutter, int bufferSize_, Mode mode, std::string dump_path,
 										   kernel::LoggerTask *loggerTask):
 	HardwareSensorProprioAbstract(condition, mode, bufferSize_, ctNone),
-	/*tightly_synchronized(false), */ dump_path(dump_path), loggerTask(loggerTask), index(0)
+	/*tightly_synchronized(false), */ dump_path(dump_path), loggerTask(loggerTask)
 {
 	if (mode == mOnlineDump && !loggerTask) JFR_ERROR(RtslamException, rtslam::RtslamException::GENERIC_ERROR, "HardwareSensorMtiRos: you must provide a loggerTask if you want to dump data.");
 	addQuantity(qAcc);
@@ -131,6 +131,7 @@ HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condi
 //	}
 
 	nh.setCallbackQueue(&imu_callback_queue);
+	initialized_ = false; // Needed to wait for the topics to be published.
 }
 
 HardwareSensorMtiRos::~HardwareSensorMtiRos()
