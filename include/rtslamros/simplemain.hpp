@@ -58,6 +58,8 @@ sensor_manager_ptr_t sensorManager;
 bool ready = false; // Variable that indicates if the extrapolation was initialized at least once after the robot moves
 boost::scoped_ptr<tf::TransformBroadcaster> tfBroadcasterPtr; // Used to broadcast robot estimated pose
 jafar::rtslam::hardware::Mode mode; // Used to set the hardware properly
+tf::Transform rtslam_origin; // to hold where the robot was when we started the estimation
+
 
 #ifdef HAVE_MODULE_QDISPLAY
 display::ViewerQt *viewerQt = NULL;
@@ -225,6 +227,25 @@ bool demo_slam_simple_init()
 	robPtr1->setOrientationStd(0,0,configSetup.INITIAL_HEADING,
 							   configSetup.UNCERT_ATTITUDE,configSetup.UNCERT_ATTITUDE,configSetup.UNCERT_HEADING,
 							   false);
+
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) {
+		tf::TransformListener listener;
+		tf::StampedTransform transform;
+		ros::spinOnce(); // get latest tf
+		// loop is needed because it may take a while until the transformation is ready.
+		while(true) {
+			try{
+				listener.lookupTransform("uav0/origin", "uav0/body", ros::Time(0), transform);
+				break;
+			}
+			catch (tf::TransformException ex){
+				ros::spinOnce();
+			}
+		}
+		rtslam_origin.setOrigin(transform.getOrigin());
+		rtslam_origin.setRotation(transform.getRotation());
+	}
+
 
 	if (dataLogger) dataLogger->addLoggable(*robPtr1.get()); /// \warning This line creates a segmentation fault when destroying the robot...
 
@@ -658,12 +679,15 @@ void demo_slam_simple_main(world_ptr_t *world)
 			}
 			filterTime = robPtr->self_time;
 
+			// Broadcast the origin of the estimation
+			tfBroadcasterPtr->sendTransform(tf::StampedTransform(rtslam_origin, ros::Time(pinfo.date), "uav0/origin", "rtslam/origin"));
+
 			// Broadcast current estimation on /tf topic
 			tf::Transform transform;
 			// NOTE: The robot pose is represented inside RT-SLAM in the following order: [x y z qw qx qy qz]
 			transform.setOrigin( tf::Vector3(robPtr->state.x(0), robPtr->state.x(1), robPtr->state.x(2)) );
 			transform.setRotation( tf::Quaternion(robPtr->state.x(4), robPtr->state.x(5), robPtr->state.x(6), robPtr->state.x(3)) );
-			tfBroadcasterPtr->sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", "uav0/rtslam"));
+			tfBroadcasterPtr->sendTransform(tf::StampedTransform(transform, ros::Time(pinfo.date), "rtslam/origin", "rtslam/estim"));
 		}
 
 		// Wait that display has finished if we're rendering all frames
