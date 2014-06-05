@@ -106,6 +106,15 @@ display::ViewerGdhe *viewerGdhe = NULL;
 bool demo_slam_simple_init()
 { JFR_GLOBAL_TRY
 
+	// Wait until we set up the time.
+	// Obs: It should only stop here if we're playing data from ROS bags and rosparam /use_sim_time is set
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
+	{
+		std::cout << "Waiting for the ROS clock time..." << std::flush;
+		while(ros::Time::now().isZero()) { ros::spinOnce(); }
+		std::cout << "ok." << std::endl;
+	}
+
 	// Set the mode based on the options.
 	/// \todo I feel a mixing between mode and replay/dump variables... it should be clarified and maybe the mode could be set directly by the user, and the program would stop if the combinations of modes are not allowed.
 	/// \warning I have no idea if the lines below are correct
@@ -447,15 +456,6 @@ void demo_slam_simple_main(world_ptr_t *world)
 	// Set the signal catcher. Allows proper finalization of RT-SLAM in a event
 	// of a signal being raised (like a stop by interruption with Ctrl-C).
 	set_signals(signal_catcher);
-
-	// Wait until we set up the time.
-	// Obs: It should only stop here if we're playing data from ROS bags and rosparam /use_sim_time is set
-	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam)
-	{
-		std::cout << "Waiting for the ROS clock time..." << std::flush;
-		while(ros::Time::now().isZero()) { ros::spinOnce(); }
-		std::cout << "ok." << std::endl;
-	}
 
 	// Start hardware sensors that need long init
 	bool has_init = false;

@@ -11,6 +11,8 @@ int main(int argc, char **argv)
 	// Parse input arguments
 	rtslamoptions::parse_options(argc, argv);
 
+	ros::NodeHandle n;
+
 	// Initialize SLAM
 	std::cout << "Initializing..." << std::flush;
 	if (!demo_slam_simple_init()) exit(1);
