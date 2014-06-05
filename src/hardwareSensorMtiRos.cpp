@@ -30,12 +30,12 @@ void HardwareSensorMtiRos::callback(const sensor_msgs::Imu& msg)
 	reading.data(0) = msg.header.stamp.toSec();
 
 	reading.data(1) = msg.linear_acceleration.x;
-	reading.data(2) = msg.linear_acceleration.y;
-	reading.data(3) = msg.linear_acceleration.z;
+	reading.data(2) = -msg.linear_acceleration.y;
+	reading.data(3) = -msg.linear_acceleration.z;
 
 	reading.data(4) = msg.angular_velocity.x;
-	reading.data(5) = msg.angular_velocity.y;
-	reading.data(6) = msg.angular_velocity.z;
+	reading.data(5) = -msg.angular_velocity.y;
+	reading.data(6) = -msg.angular_velocity.z;
 
 	/** @todo Check: 1) if we use magnetometer data inside RT-SLAM
 	  *              2) If we use, how to get the data from sensor_msgs::Imu
