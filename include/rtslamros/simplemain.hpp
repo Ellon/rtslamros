@@ -33,6 +33,9 @@
 // To broadcast the estimated robot pose we need a tf broadcaster
 #include <tf/transform_broadcaster.h>
 
+// To read initial camera and robot poses from tf we need tf listener
+#include <tf/transform_listener.h>
+
 // Namespaces being used
 using namespace jafar::rtslamros;
 using namespace jafar::rtslam;
@@ -237,6 +240,33 @@ bool demo_slam_simple_init()
 	pinhole_ptr_t senPtr11(new SensorPinhole(robPtr1, MapObject::UNFILTERED));
 	senPtr11->linkToParentRobot(robPtr1);
 	senPtr11->name("cam");
+
+	// If running online, get the camera pose from ros TF (overwrites loaded CAMERA_POSE)
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) {
+		tf::TransformListener listener;
+		tf::StampedTransform transform;
+		ros::spinOnce(); // get latest tf
+		// loop is needed because it may take a while until the transformation is ready.
+		while(true) {
+			try{
+				listener.lookupTransform("uav0/body", "uav0/camera/0/image_frame", ros::Time(0), transform);
+				break;
+			}
+			catch (tf::TransformException ex){
+				ros::spinOnce();
+			}
+		}
+
+		tf::Vector3 pos = transform.getOrigin();
+		configSetup.CAMERA_POSE(0) = pos[0]; configSetup.CAMERA_POSE(1) = pos[1]; configSetup.CAMERA_POSE(2) = pos[2];
+		tf::Matrix3x3 ori(transform.getRotation());
+		ori.getEulerYPR(configSetup.CAMERA_POSE(5),configSetup.CAMERA_POSE(4),configSetup.CAMERA_POSE(3));
+		configSetup.CAMERA_POSE(3) = jmath::radToDeg(configSetup.CAMERA_POSE(3));
+		configSetup.CAMERA_POSE(4) = jmath::radToDeg(configSetup.CAMERA_POSE(4));
+		configSetup.CAMERA_POSE(5) = jmath::radToDeg(configSetup.CAMERA_POSE(5));
+		std::cout << "CAMERA_POSE from /tf: " << configSetup.CAMERA_POSE << std::endl;
+	}
+
 	senPtr11->setPose(configSetup.CAMERA_POSE(0), configSetup.CAMERA_POSE(1), configSetup.CAMERA_POSE(2), configSetup.CAMERA_POSE(3), configSetup.CAMERA_POSE(4), configSetup.CAMERA_POSE(5)); // x,y,z,roll,pitch,yaw
 
 	senPtr11->params.setIntrinsicCalibration(configSetup.CAMERA_IMG_WIDTH, configSetup.CAMERA_IMG_HEIGHT, configSetup.CAMERA_INTRINSIC, configSetup.CAMERA_DISTORTION, configEstimation.CORRECTION_SIZE);
