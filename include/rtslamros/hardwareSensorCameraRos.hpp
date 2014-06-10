@@ -20,6 +20,7 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
 
 namespace jafar {
 namespace rtslamros {
@@ -36,18 +37,31 @@ private:
 	ros::CallbackQueue camera_callback_queue;
 
 	void callback(const sensor_msgs::Image& msg);
+	void init_callback(const sensor_msgs::Image& msg);
+	void cam_info_callback(const sensor_msgs::CameraInfo& msg);
 	jafar::rtslam::rawimage_ptr_t callback_img;
+
+	bool received_cam_info;
 
 	virtual void preloadTask(void);
 
 	void init(rtslam::hardware::Mode mode, std::string dump_path, cv::Size imgSize);
+	void initCameraRos(double init_time, cv::Size &imgSize);
+
+	unsigned CAMERA_IMG_WIDTH;     ///< image width
+	unsigned CAMERA_IMG_HEIGHT;    ///< image height
+	jblas::vec4 CAMERA_INTRINSIC;  ///< intrisic calibration parameters (u0,v0,alphaU,alphaV)
+	jblas::vec3 CAMERA_DISTORTION; ///< distortion calibration parameters (r1,r2,r3)
+
 public:
 
-	/**
-		Same as before but assumes that mode=2, and doesn't need a camera
-		*/
+	/// Constructor when working online. Initialize Camera params from ROS topic
+	HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id,
+							double init_time, int bufferSize, kernel::LoggerTask *loggerTask = NULL,std::string dump_path = ".");
+
+	/// Constructor when working offline
 	HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, cv::Size imgSize,
-							int bufferSize, kernel::LoggerTask *loggerTask = NULL,std::string dump_path = ".");
+							double freq, int bufferSize, kernel::LoggerTask *loggerTask = NULL,std::string dump_path = ".");
 
 
 	~HardwareSensorCameraRos();
@@ -58,6 +72,11 @@ public:
 		getTimingInfos(period, delay);
 		std::cout << "Firewire: arrival_delay " << delay*1000 << " milliseconds." << std::endl;
 	}
+
+	inline unsigned getCameraImgWidth(){ return CAMERA_IMG_WIDTH; }
+	inline unsigned getCameraImgHeight(){ return CAMERA_IMG_HEIGHT; }
+	inline jblas::vec4 getCameraIntrinsic(){ return CAMERA_INTRINSIC; }
+	inline jblas::vec3 getCameraDistortion(){ return CAMERA_DISTORTION; }
 
 };
 

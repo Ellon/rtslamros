@@ -27,6 +27,25 @@ namespace hardware {
 using namespace jafar::rtslam;
 using namespace jafar::rtslam::hardware;
 
+void HardwareSensorCameraRos::cam_info_callback(const sensor_msgs::CameraInfo& msg)
+{
+
+	CAMERA_IMG_WIDTH = msg.width;
+	CAMERA_IMG_HEIGHT = msg.height;
+
+	CAMERA_INTRINSIC(0) = msg.K.at(2);
+	CAMERA_INTRINSIC(1) = msg.K.at(5);
+	CAMERA_INTRINSIC(2) = msg.K.at(0);
+	CAMERA_INTRINSIC(3) = msg.K.at(4);
+
+	CAMERA_DISTORTION(0) = msg.D.at(0);
+	CAMERA_DISTORTION(1) = msg.D.at(1);
+	CAMERA_DISTORTION(2) = msg.D.at(4);
+
+	received_cam_info = true;
+
+}
+
 void HardwareSensorCameraRos::callback(const sensor_msgs::Image& msg)
 {
 	cv_bridge::CvImagePtr cv_ptr;
@@ -44,6 +63,11 @@ void HardwareSensorCameraRos::callback(const sensor_msgs::Image& msg)
 	callback_img->timestamp = msg.header.stamp.toSec();
 	callback_img->arrival = kernel::Clock::getTime();
 
+}
+
+void HardwareSensorCameraRos::init_callback(const sensor_msgs::Image& msg)
+{
+	callback_img->timestamp = msg.header.stamp.toSec();
 }
 
 
@@ -120,12 +144,63 @@ void HardwareSensorCameraRos::preloadTask(void)
 	JFR_GLOBAL_CATCH
 }
 
-	HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, cv::Size imgSize,
-													 int bufferSize, kernel::LoggerTask *loggerTask,std::string dump_path):
+void HardwareSensorCameraRos::initCameraRos(double init_time, cv::Size &imgSize)
+{
+	ros::NodeHandle nh_for_camera_info;
+	ros::Subscriber camera_info_sub = nh_for_camera_info.subscribe("camera_info", 1, &HardwareSensorCameraRos::cam_info_callback, this);
+
+	received_cam_info = false;
+	while(!received_cam_info){
+		ros::spinOnce();
+	}
+
+	imgSize.width = CAMERA_IMG_WIDTH;
+	imgSize.height = CAMERA_IMG_HEIGHT;
+
+	// Initialize real frequency
+	ros::Subscriber sub = nh.subscribe("image_raw", 500, &HardwareSensorCameraRos::init_callback, this);
+	bool first = true;
+	double time_first = 0, time_last = 0;
+	int msg_count = 0;
+	callback_img = rawimage_ptr_t(new RawImage);
+	while(time_last - time_first < init_time){
+		if(camera_callback_queue.callOne(ros::WallDuration()) != ros::CallbackQueue::Called) continue;
+
+		if(first){
+			first = false;
+			time_first = callback_img->timestamp;
+		}
+
+		time_last = callback_img->timestamp;
+		msg_count++;
+	}
+
+	realFreq = (time_last - time_first)/msg_count;
+
+}
+
+HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id,
+												 double init_time, int bufferSize, kernel::LoggerTask *loggerTask,std::string dump_path):
+	HardwareSensorCamera(condition, mode, cam_id, bufferSize, loggerTask)
+{
+	nh.setCallbackQueue(&camera_callback_queue);
+
+	cv::Size imgSize;
+	initCameraRos(init_time,imgSize);
+
+	HardwareSensorCamera::init(mode,dump_path,imgSize);
+
+	initialized_ = false; // Needed to wait for the topics to be published.
+
+}
+
+HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, cv::Size imgSize,
+													 double freq, int bufferSize, kernel::LoggerTask *loggerTask,std::string dump_path):
 		HardwareSensorCamera(condition, mode, cam_id, bufferSize, loggerTask)
 	{
 		HardwareSensorCamera::init(mode,dump_path,imgSize);
 		nh.setCallbackQueue(&camera_callback_queue);
+		realFreq = freq;
 		initialized_ = false; // Needed to wait for the topics to be published.
 	}
 
