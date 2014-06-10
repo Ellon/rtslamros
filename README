@@ -1,6 +1,8 @@
 README - RT-SLAM ROS node
 -------------------------
 
+**WARNING: This package is a work-in-progress and still not stable!**
+
 "Quick"start
 
 1) Install robotpkg (See http://robotpkg.openrobots.org)
