@@ -48,11 +48,16 @@ private:
 
 	void callback(const sensor_msgs::Imu& msg);
 
+	void init(double init_time);
+
 public:
+	/// Constructor when working online. Initialize MTI params from ROS topic
+	HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, int bufferSize_, double init_time, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOnline,
+						 std::string dump_path = ".", kernel::LoggerTask *loggerTask = NULL);
 
-
+	/// Constructor when working offline.
 	HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, double trigger_mode,
-						 double trigger_freq, double trigger_shutter, int bufferSize_, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOnline,
+						 double trigger_freq, double trigger_shutter, int bufferSize_, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOffline,
 						 std::string dump_path = ".", kernel::LoggerTask *loggerTask = NULL);
 	~HardwareSensorMtiRos();
 	virtual void start();

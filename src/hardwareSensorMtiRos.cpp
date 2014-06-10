@@ -110,9 +110,50 @@ void HardwareSensorMtiRos::preloadTask(void)
 	JFR_GLOBAL_CATCH
 }
 
-HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, double trigger_mode,
-										   double trigger_freq, double trigger_shutter, int bufferSize_, Mode mode, std::string dump_path,
-										   kernel::LoggerTask *loggerTask):
+HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, int bufferSize_, double init_time, jafar::rtslam::hardware::Mode mode,
+										   std::string dump_path, kernel::LoggerTask *loggerTask):
+	HardwareSensorProprioAbstract(condition, mode, bufferSize_, ctNone),
+	dump_path(dump_path), loggerTask(loggerTask)
+{
+	if (mode == mOnlineDump && !loggerTask) JFR_ERROR(RtslamException, rtslam::RtslamException::GENERIC_ERROR, "HardwareSensorMtiRos: you must provide a loggerTask if you want to dump data.");
+	addQuantity(qAcc);
+	addQuantity(qAngVel);
+	addQuantity(qMag);
+	initData();
+
+	nh.setCallbackQueue(&imu_callback_queue);
+
+	init(init_time);
+
+	initialized_ = false; // Needed to wait for the topics to be published.
+}
+
+void HardwareSensorMtiRos::init(double init_time)
+{
+	ros::Subscriber sub = nh.subscribe("imu", 1024, &HardwareSensorMtiRos::callback, this);
+
+	bool first = true;
+	double time_first = 0, time_last = 0;
+	int msg_count = 0;
+	while(time_last - time_first < init_time){
+		if(imu_callback_queue.callOne(ros::WallDuration()) != ros::CallbackQueue::Called) continue;
+
+		if(first){
+			first = false;
+			time_first = reading.data(0);
+		}
+
+		time_last = reading.data(0);
+		msg_count++;
+	}
+
+	realFreq = (time_last - time_first)/msg_count;
+
+}
+
+HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition,
+										   double trigger_mode, double trigger_freq, double trigger_shutter, int bufferSize_,
+										   Mode mode, std::string dump_path, kernel::LoggerTask *loggerTask):
 	HardwareSensorProprioAbstract(condition, mode, bufferSize_, ctNone),
 	/*tightly_synchronized(false), */ dump_path(dump_path), loggerTask(loggerTask)
 {
