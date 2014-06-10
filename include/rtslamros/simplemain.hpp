@@ -382,6 +382,10 @@ bool demo_slam_simple_init()
 	}
 #endif
 
+	// Save setup and estimation options on files
+	configSetup.save(rtslamoptions::datapath + "/setup.cfg", "=" );
+	configEstimation.save(rtslamoptions::datapath + "/estimation.cfg", "=");
+
 	return true;
 	JFR_GLOBAL_CATCH
 } // demo_slam_simple_init

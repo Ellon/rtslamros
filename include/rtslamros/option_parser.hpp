@@ -11,7 +11,11 @@
 // for rtslam::hardware::mode
 #include <rtslam/hardwareSensorAbstract.hpp>
 
-class ConfigSetup
+// to save values into config files
+#include <kernel/keyValueFile.hpp>
+
+
+class ConfigSetup: public jafar::kernel::KeyValueFileSave
 {
  public:
 	/// SENSOR
@@ -47,9 +51,13 @@ class ConfigSetup
 
 	double IMU_TIMESTAMP_CORRECTION; ///< correction to add to the IMU timestamp for synchronization (s)
 
- } configSetup;
+private:
+	void processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile, bool read);
+public:
+	virtual void saveKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile);
+} configSetup;
 
-class ConfigEstimation
+class ConfigEstimation: public jafar::kernel::KeyValueFileSave
 {
  public:
 	/// MISC
@@ -98,9 +106,12 @@ class ConfigEstimation
 	double HI_MATCH_TH;        ///< higher ZNCC score threshold for landmarks with high depth uncertainty and high expectation uncertainty
 	double HI_LIMIT;           ///< limit in pixels of the expectation uncertainty to use HI_MATCH_TH
 	double PARTIAL_POSITION;   ///< position in the patch where we test if we finish the correlation computation
+private:
+	void processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile, bool read);
+public:
+	virtual void saveKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile);
 
 } configEstimation;
-
 
 // Protect the option variables by an namespace
 namespace rtslamoptions{
@@ -144,9 +155,6 @@ int parse_options(int ac, char* av[])
 	namespace po = boost::program_options;
 	using namespace std;
 
-	// Internal variables to the parser functions
-	string config_file;
-
 	try {
 		// Declare a group of options that will be allowed only on command line
 		po::options_description generic("Generic options");
@@ -155,7 +163,7 @@ int parse_options(int ac, char* av[])
 				("help,h", "produce help message")
 		        ("help-setup", "show setup options")
 		        ("help-estimation", "show estimation options")
-				("config,c", po::value<string>(&config_file),"name of a file of a configuration.")
+				("config,c", po::value< vector<string> >(), "name of a configuration file.")
 				;
 
 		// Mount the description string of replay option.
@@ -286,17 +294,23 @@ int parse_options(int ac, char* av[])
 		// Verify if a config file was passed as an option
 		if (vm.count("config")) {
 
-			ifstream ifs(config_file.c_str());
-			if (!ifs)
-			{
-				cout << "can not open config file: " << config_file << "\n";
-				exit(1);
-			}
+			const std::vector<std::string> &config_files = vm["config"].as< std::vector<std::string> >();
 
-			// Parse the options on the config file.
-			// NOTE: They are not going to be updated if they were already set by the command line option
-			po::store(parse_config_file(ifs, config_file_options), vm);
-			po::notify(vm);
+			for(std::vector<std::string>::const_iterator it = config_files.begin();
+				it != config_files.end(); ++it) {
+
+				ifstream ifs(it->c_str());
+				if (!ifs)
+				{
+					cout << "can not open config file: " << *it << "\n";
+					exit(1);
+				}
+
+				// Parse the options on the config file.
+				// NOTE: They are not going to be updated if they were already set by the command line option
+				po::store(parse_config_file(ifs, config_file_options), vm);
+				po::notify(vm);
+			}
 		}
 
 		// Check for generic options
@@ -347,6 +361,103 @@ int parse_options(int ac, char* av[])
 	return 0;
 }
 
+}
+
+#define KeyValueFile_processItem(k) { read ? keyValueFile.getItem(#k, k) : keyValueFile.setItem(#k, k); }
+#define KeyValueFile_processItem_def(k, def) { read ? keyValueFile.getItem(#k, k, def) : keyValueFile.setItem(#k, k); }
+
+void ConfigSetup::saveKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile)
+{
+  processKeyValueFile(keyValueFile, false);
+}
+
+void ConfigSetup::processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile, bool read)
+{
+	/// SENSOR
+	KeyValueFile_processItem(ROBOT_POSE);
+	KeyValueFile_processItem(CAMERA_POSE); ///< camera pose in SLAM frame (IMU frame) for inertial (x,y,z,roll,pitch,yaw) (m,deg). If add std devs, will be filtered.
+
+	KeyValueFile_processItem(CAMERA_DEVICE);
+	KeyValueFile_processItem(CAMERA_IMG_WIDTH);
+	KeyValueFile_processItem(CAMERA_IMG_HEIGHT);
+	KeyValueFile_processItem(CAMERA_INTRINSIC);
+	KeyValueFile_processItem(CAMERA_DISTORTION);
+	KeyValueFile_processItem(CAMERA_CALIB);
+
+	/// INERTIAL (also using UNCERT_VLIN)
+	KeyValueFile_processItem(UNCERT_VLIN);
+	KeyValueFile_processItem(ACCELERO_FULLSCALE);
+	KeyValueFile_processItem(ACCELERO_NOISE);
+	KeyValueFile_processItem(GYRO_FULLSCALE);
+	KeyValueFile_processItem(GYRO_NOISE);
+
+	KeyValueFile_processItem(INITIAL_GRAVITY);
+	KeyValueFile_processItem(UNCERT_GRAVITY);
+	KeyValueFile_processItem(UNCERT_ABIAS);
+	KeyValueFile_processItem(UNCERT_WBIAS);
+	KeyValueFile_processItem(PERT_AERR);
+	KeyValueFile_processItem(PERT_WERR);
+	KeyValueFile_processItem(PERT_RANWALKACC);
+	KeyValueFile_processItem(PERT_RANWALKGYRO);
+
+	KeyValueFile_processItem(INITIAL_HEADING);
+	KeyValueFile_processItem(UNCERT_HEADING);
+	KeyValueFile_processItem(UNCERT_ATTITUDE);
+
+	KeyValueFile_processItem(IMU_TIMESTAMP_CORRECTION);
+}
+
+void ConfigEstimation::saveKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile)
+{
+  processKeyValueFile(keyValueFile, false);
+}
+
+void ConfigEstimation::processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile, bool read)
+{
+	KeyValueFile_processItem(CORRECTION_SIZE);
+
+	KeyValueFile_processItem(MAP_SIZE);
+	KeyValueFile_processItem(PIX_NOISE);
+
+	KeyValueFile_processItem(D_MIN);
+	KeyValueFile_processItem(REPARAM_TH);
+
+	KeyValueFile_processItem(GRID_HCELLS);
+	KeyValueFile_processItem(GRID_VCELLS);
+	KeyValueFile_processItem(GRID_MARGIN);
+	KeyValueFile_processItem(GRID_SEPAR);
+
+	KeyValueFile_processItem(RELEVANCE_TH);
+	KeyValueFile_processItem(MAHALANOBIS_TH);
+	KeyValueFile_processItem(N_UPDATES_TOTAL);
+	KeyValueFile_processItem(N_UPDATES_RANSAC);
+	KeyValueFile_processItem(N_INIT);
+	KeyValueFile_processItem(N_RECOMP_GAINS);
+	KeyValueFile_processItem(RANSAC_LOW_INNOV);
+
+	KeyValueFile_processItem(RANSAC_NTRIES);
+	KeyValueFile_processItem(MULTIPLE_DEPTH_HYPOS);
+
+	KeyValueFile_processItem(HARRIS_CONV_SIZE);
+	KeyValueFile_processItem(HARRIS_TH);
+	KeyValueFile_processItem(HARRIS_EDDGE);
+
+	KeyValueFile_processItem(DESC_SIZE);
+	KeyValueFile_processItem(MULTIVIEW_DESCRIPTOR);
+	KeyValueFile_processItem(DESC_SCALE_STEP);
+	KeyValueFile_processItem(DESC_ANGLE_STEP);
+	KeyValueFile_processItem(DESC_PREDICTION_TYPE);
+
+	KeyValueFile_processItem(PATCH_SIZE);
+	KeyValueFile_processItem(MAX_SEARCH_SIZE);
+	KeyValueFile_processItem(KILL_SEARCH_SIZE);
+	KeyValueFile_processItem(MATCH_TH);
+	KeyValueFile_processItem(MIN_SCORE);
+
+	KeyValueFile_processItem(HI_MATCH_TH);
+	KeyValueFile_processItem(HI_LIMIT);
+
+	KeyValueFile_processItem(PARTIAL_POSITION);
 }
 
 #endif // OPTION_PARSER_HPP
