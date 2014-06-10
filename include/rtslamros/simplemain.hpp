@@ -80,11 +80,14 @@ display::ViewerGdhe *viewerGdhe = NULL;
 #define GRID_N_DIST 5
 #define GRID_PHI_FACTOR 1.2
 #define TRIGGER_OPTION 0
-#define FREQ_OPTION 15.0
+#define FREQ_OPTION 50
 #define SHUTTER_OPTION 0.0
 #define MTI_BUFFER_SIZE 1024
+#define MTI_INIT_TIME 2.0
 #define CAMERA_ID 1
 #define CAMERA_BUFFER 500
+#define CAMERA_FREQ 15.0
+#define CAMERA_INIT_TIME 2.0
 
 /// \note MULTIPLE_DEPTH_HYPOS was set in an exeption catch on main.hpp
 /// \todo Set initial camera pose from tf topic
@@ -214,12 +217,19 @@ bool demo_slam_simple_init()
 		configSetup.PERT_RANWALKACC, configSetup.PERT_RANWALKACC, configSetup.PERT_RANWALKACC};
 	vec pertStd = createVector<12>(_v12);
 	robPtr1->perturbation.set_std_continuous(pertStd);
+	boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1;
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam){
+		hardEst1.reset(new rtslamros::hardware::HardwareSensorMtiRos(&estimatordata_condition,
+																	 MTI_BUFFER_SIZE, MTI_INIT_TIME, mode,
+																	 rtslamoptions::datapath, loggerTask.get()));
+	} else {
+		hardEst1.reset(new rtslamros::hardware::HardwareSensorMtiRos(&estimatordata_condition,
+																	 TRIGGER_OPTION, FREQ_OPTION, SHUTTER_OPTION, ///< \todo Verify if trigger, freq and shutter are important when reading data from ROS topics.
+																	 MTI_BUFFER_SIZE, mode, rtslamoptions::datapath,
+																	 loggerTask.get()));
+		hardEst1->setSyncConfig(configSetup.IMU_TIMESTAMP_CORRECTION);
+	}
 
-	boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1(new rtslamros::hardware::HardwareSensorMtiRos(&estimatordata_condition,
-																														TRIGGER_OPTION, FREQ_OPTION, SHUTTER_OPTION, ///< \todo Verify if trigger, freq and shutter are important when reading data from ROS topics.
-																														MTI_BUFFER_SIZE, mode, rtslamoptions::datapath,
-																														loggerTask.get()));
-	hardEst1->setSyncConfig(configSetup.IMU_TIMESTAMP_CORRECTION);
 	robPtr1->setHardwareEstimator(hardEst1);
 
 	robPtr1->linkToParentMap(mapPtr);
@@ -261,6 +271,20 @@ bool demo_slam_simple_init()
 	pinhole_ptr_t senPtr11(new SensorPinhole(robPtr1, MapObject::UNFILTERED));
 	senPtr11->linkToParentRobot(robPtr1);
 	senPtr11->name("cam");
+
+	// Create hardware for the camera
+	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11;
+	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam){
+		hardSen11.reset(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, CAMERA_ID, CAMERA_INIT_TIME, CAMERA_BUFFER, loggerTask.get(),rtslamoptions::datapath));
+		configSetup.CAMERA_IMG_WIDTH = hardSen11->getCameraImgWidth();
+		configSetup.CAMERA_IMG_HEIGHT = hardSen11->getCameraImgHeight();
+		configSetup.CAMERA_INTRINSIC = hardSen11->getCameraIntrinsic();
+		configSetup.CAMERA_DISTORTION = hardSen11->getCameraDistortion();
+	} else {
+		hardSen11.reset(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, CAMERA_ID, cv::Size(configSetup.CAMERA_IMG_WIDTH,configSetup.CAMERA_IMG_HEIGHT),CAMERA_FREQ,CAMERA_BUFFER,loggerTask.get(),rtslamoptions::datapath));
+	}
+	hardSen11->setTimingInfos(1.0/hardSen11->getFreq(), 1.0/hardSen11->getFreq());
+	senPtr11->setHardwareSensor(hardSen11);
 
 	// If running online, get the camera pose from ros TF (overwrites loaded CAMERA_POSE)
 	if(rtslamoptions::replay == rtslamoptions::rOnline || rtslamoptions::replay == rtslamoptions::rOnlineNoSlam) {
@@ -310,11 +334,6 @@ bool demo_slam_simple_init()
 	dmPt11->linkToParentMapManager(mmPoint);
 	dmPt11->setObservationFactory(obsFact);
 	if (dataLogger) dataLogger->addLoggable(*dmPt11.get());
-
-	// Create hardware for the camera
-	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11(new rtslamros::hardware::HardwareSensorCameraRos(&rawdata_condition, mode, CAMERA_ID, cv::Size(configSetup.CAMERA_IMG_WIDTH,configSetup.CAMERA_IMG_HEIGHT),CAMERA_BUFFER,loggerTask.get(),rtslamoptions::datapath));
-	hardSen11->setTimingInfos(1.0/hardSen11->getFreq(), 1.0/hardSen11->getFreq());
-	senPtr11->setHardwareSensor(hardSen11);
 
 	// Create sensor manager
 	// Obs: Offline has no logger task;
