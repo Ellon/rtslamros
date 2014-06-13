@@ -19,8 +19,8 @@ class ConfigSetup: public jafar::kernel::KeyValueFileSave
 {
  public:
 	/// SENSOR
-	jblas::vec ROBOT_POSE; ///< real robot pose in SLAM frame (IMU frame in inertial) (for init and export)
-	jblas::vec CAMERA_POSE; ///< camera pose in SLAM frame (IMU frame) for inertial (x,y,z,roll,pitch,yaw) (m,deg). If add std devs, will be filtered.
+	jblas::vec6 ROBOT_POSE; ///< real robot pose in SLAM frame (IMU frame in inertial) (for init and export)
+	jblas::vec6 CAMERA_POSE; ///< camera pose in SLAM frame (IMU frame) for inertial (x,y,z,roll,pitch,yaw) (m,deg). If add std devs, will be filtered.
 
 	std::string CAMERA_DEVICE; ///< camera device (firewire ID or device)
 	unsigned CAMERA_IMG_WIDTH;     ///< image width
@@ -208,8 +208,8 @@ int parse_options(int ac, char* av[])
 		// setup and estimation options
         po::options_description setup("Setup options");
         setup.add_options()
-		        ("ROBOT_POSE", po::value< jblas::vec >(&configSetup.ROBOT_POSE), "real robot pose in SLAM frame (IMU frame in inertial) (for init and export)")
-		        ("CAMERA_POSE", po::value< jblas::vec >(&configSetup.CAMERA_POSE), "camera pose in SLAM frame (IMU frame) for inertial (x,y,z,roll,pitch,yaw) (m,deg)")
+				("ROBOT_POSE", po::value< jblas::vec6 >(&configSetup.ROBOT_POSE), "real robot pose in SLAM frame (IMU frame in inertial) (for init and export)")
+				("CAMERA_POSE", po::value< jblas::vec6 >(&configSetup.CAMERA_POSE), "camera pose in SLAM frame (IMU frame) for inertial (x,y,z,roll,pitch,yaw) (m,deg)")
 		        ("CAMERA_DEVICE", po::value< std::string >(&configSetup.CAMERA_DEVICE), "camera device (firewire ID or device)")
 		        ("CAMERA_IMG_WIDTH", po::value< unsigned >(&configSetup.CAMERA_IMG_WIDTH), "image width")
 		        ("CAMERA_IMG_HEIGHT", po::value< unsigned >(&configSetup.CAMERA_IMG_HEIGHT), "image height")
