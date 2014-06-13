@@ -227,8 +227,8 @@ bool demo_slam_simple_init()
 																	 TRIGGER_OPTION, FREQ_OPTION, SHUTTER_OPTION, ///< \todo Verify if trigger, freq and shutter are important when reading data from ROS topics.
 																	 MTI_BUFFER_SIZE, mode, rtslamoptions::datapath,
 																	 loggerTask.get()));
-		hardEst1->setSyncConfig(configSetup.IMU_TIMESTAMP_CORRECTION);
 	}
+	hardEst1->setSyncConfig(configSetup.IMU_TIMESTAMP_CORRECTION);
 
 	robPtr1->setHardwareEstimator(hardEst1);
 
