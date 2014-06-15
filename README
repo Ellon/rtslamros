@@ -86,3 +86,28 @@ Available Nodes
                           parameters should be set in simplemain.hpp
                           file before compilation. No arguments are
                           required to run.
+
+How to use it
+-------------
+
+Currently, the node which is usable (although maybe still unstable) is
+sumplertslam_node. Most of supported options are the same as
+RT-SLAM. You can check the options with:
+
+	rosrun rtslamros simplertslamros_node -h
+
+To use the node in online mode from ROS topics, you should remap the
+topics "imu", "image_raw" and "camera_info" to the correct topic
+names. This can be done through a launch file or by command line. In
+the command line this can be done with: 
+
+	rosrun rtslamros simplertslamros_node imu:=/your/imu/topic image_raw:=/your/image_raw/topic camera_info:=/your/camera_info/topic
+
+If you want to run from bags, set the ROS param /use_sim_time to true
+using: 
+
+       rosparam set /use_sim_time true
+
+and run your bag with the --clock option
+
+    rosbag play --clock path/to/your/bag/file
