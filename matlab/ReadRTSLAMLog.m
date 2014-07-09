@@ -42,7 +42,7 @@ function [log] = ReadRTSLAMLog(filename,options)
     % read each of the landmarks
 	for i = 1:n_lmks
 		log.lmks(i) = LoadLandmarkLog(fid,options);
-    end
+	end
     
     % close the file
     fclose(fid);
@@ -50,6 +50,7 @@ end
 
 function robot_log = LoadRobotLog(fid)
     robot_log.index = fread(fid, 1, 'uint64');
+    robot_log.date = fread(fid, 1, 'double');
     robot_log.pose_mean = fread(fid, 7, 'double');
     robot_log.pose_cov = fread(fid, [7 7], 'double');
 end
