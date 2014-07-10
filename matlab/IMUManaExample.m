@@ -15,11 +15,14 @@ estimationconfig = ReadConfigFile([options.datapath '/estimation.cfg']);
 % IMU data
 disp('-- Reading MTI sensor data from RTSLAM dataset')
 IMU_data = LoadMTIRTSLAMLog([options.datapath '/MTI.log']);
+% Correct MTI timestamps
+for i=1:numel(IMU_data)
+    IMU_data(i).Time = IMU_data(i).Time + str2double(setupconfig.IMU_TIMESTAMP_CORRECTION);
+end
 
 % Image timestamps
-disp('-- Reading image timestamps from RTSLAM dataset')
-CAMERA_data = LoadImageTimestamps(options.datapath);
-firstRTSLAMData = 1;
+% disp('-- Reading image timestamps from RTSLAM dataset')
+% CAMERA_data = LoadImageTimestamps(options.datapath);
 
 % Load start time
 disp('-- Reading start time from RTSLAM dataset')
@@ -27,25 +30,29 @@ fileID = fopen([options.datapath '/sdate.log']);
 start_date = fscanf(fileID,'%f');
 fclose(fileID);
 
-% RT-SLAM data
-% Landmarks data from RTSLAM
+% RT-SLAM data (robot poses and landmarks measurements)
 disp('-- Reading log from RTSLAM run')
 logfiles = dir(fullfile(options.rtslamlogpath,'*.log'));
 fulllogfiles = cellfun(@(S) fullfile(options.rtslamlogpath, S),{logfiles(1:end).name}, 'Uniform', 0);
 RTSLAM_data = arrayfun(@(x) ReadRTSLAMLog(x),fulllogfiles);
 
-%% Initialization
-RTSLAMskip = 350; % Skip this many RTSLAM data before start optimizing. Guarantees the robot moved enough before optimizing (adapted to caylus dataset)
+noiseModelGPS = noiseModel.Diagonal.Precisions([ [0;0;0]; 1.0/0.07 * [1;1;1] ]);
+firstRTSLAMPose = 1;
+RTSLAMskip = 10; % Skip this many RTSLAM data each time
 
-currentPoseGlobal = Pose3(Rot3, Point3); % initial pose is at origin. CHECK: Is it ok?
+
+%% Initialization
+currentPoseGlobal = Pose3(Rot3(quat2dcm(RTSLAM_data(firstRTSLAMPose).r.pose_mean(4:7)')), ...
+                          Point3(RTSLAM_data(firstRTSLAMPose).r.pose_mean(1:3))); % initial pose is the reference frame (navigation frame)
 currentVelocityGlobal = LieVector([0;0;0]); % the vehicle is stationary at the beginning
-currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1)); % CHECK: Is it ok?
-sigma_init_x = noiseModel.Isotropic.Precisions([ 0.0; 0.0; 0.0; 1; 1; 1 ]); % CHECK: what does this precision mean?
-sigma_init_v = noiseModel.Isotropic.Sigma(3, str2double(setupconfig.UNCERT_VLIN)); % CHECK: GTSAM example had a sigma of 1000.0, while RT-SLAM has a value of 0.
-sigma_init_b = noiseModel.Isotropic.Sigmas([ str2double(setupconfig.UNCERT_ABIAS) * ones(3,1); str2double(setupconfig.UNCERT_WBIAS) * ones(3,1) ]);
-sigma_between_b = [ str2double(setupconfig.UNCERT_ABIAS) * ones(3,1); str2double(setupconfig.UNCERT_WBIAS) * ones(3,1) ]; % CHECK: what's sigma_between_b?! Which value he should give to it?
+currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
+sigma_init_x = noiseModel.Isotropic.Precisions([ 1; 1; 1; 1; 1; 1 ]); % We are quite sure the robot is at origin at the begining
+sigma_init_v = noiseModel.Isotropic.Sigma(3, 1000.0); % Even if the robot is stationary, we give an uncertainty on it's velocity.
+sigma_init_b = noiseModel.Isotropic.Sigmas([ 0.100; 0.100; 0.100; 5.00e-05; 5.00e-05; 5.00e-05 ]); % Values taken from Kitti example
+sigma_between_b = [ 1.67e-4 * ones(3,1); 2.91e-6 * ones(3,1) ]; % Values taken from IMU_metadata.AccelerometerBiasSigma and IMU_metadata.GyroscopeBiasSigma, from Kitti example
 g = [0;0;-9.8];
 w_coriolis = [0;0;0];
+
 
 %% Solver object
 isamParams = ISAM2Params;
@@ -56,13 +63,15 @@ newFactors = NonlinearFactorGraph;
 newValues = Values;
 
 %% Main Loop
+% (1) we read the measurements
+% (2) we create the corresponding factors in the graph
+% (3) we solve the graph to obtain and optimal estimate of robot trajectory
 IMUtimes = [IMU_data.Time];
 
 disp('-- Starting main loop')
-
-t_previous = start_date;
+% isamPlotted = false;
 % Loop through the images
-for measurementIndex = firstRTSLAMData:length(RTSLAM_data)
+for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
     
     % At each non=IMU measurement we initialize a new node in the graph
     currentPoseKey = symbol('x',measurementIndex);
@@ -70,10 +79,7 @@ for measurementIndex = firstRTSLAMData:length(RTSLAM_data)
     currentBiasKey = symbol('b',measurementIndex);
     t = RTSLAM_data(measurementIndex).r.date;
 
-    CurrentRTSLAMPosition = Point3(RTSLAM_data(measurementIndex).r.pose_mean(1:3));
-    CurrentRTSLAMRot = Rot3(quat2dcm(RTSLAM_data(measurementIndex).r.pose_mean(4:7)'));
-
-    if measurementIndex == firstRTSLAMData
+    if measurementIndex == firstRTSLAMPose
         %% Create initial estimate and prior on initial pose, velocity, and biases
         newValues.insert(currentPoseKey, currentPoseGlobal);
         newValues.insert(currentVelKey, currentVelocityGlobal);
@@ -82,15 +88,15 @@ for measurementIndex = firstRTSLAMData:length(RTSLAM_data)
         newFactors.add(PriorFactorLieVector(currentVelKey, currentVelocityGlobal, sigma_init_v));
         newFactors.add(PriorFactorConstantBias(currentBiasKey, currentBias, sigma_init_b));
     else
+        t_previous = RTSLAM_data(measurementIndex-1).r.date;
         % Integrate IMU measurements until the time of the current image
         IMUindices = find(IMUtimes >= t_previous & IMUtimes <= t);
-        t_previous = t;
                 
         currentSummarizedMeasurement = gtsam.ImuFactorPreintegratedMeasurements( ...
             currentBias, ...
-            (str2double(setupconfig.PERT_AERR)*str2double(setupconfig.ACCELERO_NOISE)).^2 * eye(3), ...
-            (str2double(setupconfig.PERT_WERR)*str2double(setupconfig.GYRO_NOISE)).^2 * eye(3), ...
-            0.^2 * eye(3)); % CHECK: Integration noise set to 0. Is that OK?
+            0.01 .^ 2 * eye(3), ... % Value taken from IMU_metadata.AccelerometerSigma
+            1.75e-4 .^ 2 * eye(3), ... % Value taken from IMU_metadata.GyroscopeSigma
+            0.0 .^ 2 * eye(3)); % Value taken from IMU_metadata.IntegrationSigma
         
         for imuIndex = IMUindices
             accMeas = [ IMU_data(imuIndex).accelX; IMU_data(imuIndex).accelY; IMU_data(imuIndex).accelZ ];
@@ -111,22 +117,22 @@ for measurementIndex = firstRTSLAMData:length(RTSLAM_data)
             noiseModel.Diagonal.Sigmas(sqrt(numel(IMUindices)) * sigma_between_b)));
         
         % Create GPS factor
-        RTSLAMPose = Pose3(CurrentRTSLAMRot, CurrentRTSLAMPosition);
-%        GPSPose = Pose3(currentPoseGlobal.rotation, GPS_data(measurementIndex).Position);
-%         if mod(measurementIndex, GPSskip) == 0 %CHECK: Add GPS measurements each GPSskip nodes
-%             newFactors.add(PriorFactorPose3(currentPoseKey, GPSPose, noiseModelGPS));
-%         end
+        RTSLAMPose = Pose3(Rot3(quat2dcm(RTSLAM_data(measurementIndex).r.pose_mean(4:7)')), ...
+                           Point3(RTSLAM_data(measurementIndex).r.pose_mean(1:3)));
+        if mod(measurementIndex, RTSLAMskip) == 0 %CHECK: Add GPS measurements each GPSskip nodes
+            newFactors.add(PriorFactorPose3(currentPoseKey, RTSLAMPose, noiseModelGPS));
+        end
         
         % Add initial value
-        newValues.insert(currentPoseKey, RTSLAMPose); % CHECK: Values from RT-SLAM would enter here.
-        newValues.insert(currentVelKey, currentVelocityGlobal);
-        newValues.insert(currentBiasKey, currentBias);
+        newValues.insert(currentPoseKey, RTSLAMPose);
+        newValues.insert(currentVelKey, currentVelocityGlobal); % CHECK: maybe add current velocity from the filter?
+        newValues.insert(currentBiasKey, currentBias); % CHECK: maybe add current bias from the filter?
         
         % Update solver
         % =====================================================================
         % We accumulate 2*GPSskip GPS measurements before updating the solver
         % at first so that the heading becomes observable.
-        if measurementIndex > firstRTSLAMData + RTSLAMskip
+        if measurementIndex > firstRTSLAMPose + 2*RTSLAMskip
             isam.update(newFactors, newValues);
             newFactors = NonlinearFactorGraph;
             newValues = Values;
@@ -134,14 +140,18 @@ for measurementIndex = firstRTSLAMData:length(RTSLAM_data)
             if rem(measurementIndex,10)==0 % plot every 10 time steps
                 cla;
                 plot3DTrajectory(isam.calculateEstimate, 'g-');
-                title('Estimated trajectory using ISAM2 (IMU+RTSLAM data)')
-                xlabel('[m]')
-                ylabel('[m]')
-                zlabel('[m]')
+                title(['Estimated trajectory using ISAM2 (IMU+RTSLAM data) [' int2str(measurementIndex) ']'])
+                xlabel('x [m]')
+                ylabel('y [m]')
+                zlabel('z [m]')
                 axis equal
                 drawnow;
             end
         % =====================================================================
+%             if ~isamPlotted
+%                plotBayesTree(isam)
+%                isamPlotted = true;
+%             end
             currentPoseGlobal = isam.calculateEstimate(currentPoseKey);
             currentVelocityGlobal = isam.calculateEstimate(currentVelKey);
             currentBias = isam.calculateEstimate(currentBiasKey);
