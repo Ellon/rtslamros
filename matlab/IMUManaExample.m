@@ -1,9 +1,11 @@
+clear;
 import gtsam.*;
 disp('Example of application of ISAM2 for visual-inertial localization using RTSLAM data')
 
 %% Define options for the example
 options.datapath = '/home/mellon/workspace/2012-10-17_caylus-rtslam';
 options.rtslamlogpath = '/home/mellon/devel/var/rtslam_to_g2o/log5';
+options.rtslamlogsize = 1000;
 options.similarity_threshold = 0.3;
 
 %% Read data
@@ -15,7 +17,7 @@ estimationconfig = ReadConfigFile([options.datapath '/estimation.cfg']);
 % IMU data
 disp('-- Reading MTI sensor data from RTSLAM dataset')
 IMU_data = LoadMTIRTSLAMLog([options.datapath '/MTI.log']);
-% Correct MTI timestamps
+% Correct IMU timestamps
 for i=1:numel(IMU_data)
     IMU_data(i).Time = IMU_data(i).Time + str2double(setupconfig.IMU_TIMESTAMP_CORRECTION);
 end
@@ -34,7 +36,7 @@ fclose(fileID);
 disp('-- Reading log from RTSLAM run')
 logfiles = dir(fullfile(options.rtslamlogpath,'*.log'));
 fulllogfiles = cellfun(@(S) fullfile(options.rtslamlogpath, S),{logfiles(1:end).name}, 'Uniform', 0);
-RTSLAM_data = arrayfun(@(x) ReadRTSLAMLog(x),fulllogfiles);
+RTSLAM_data = arrayfun(@(x) ReadRTSLAMLog(x),fulllogfiles(1:options.rtslamlogsize));
 
 noiseModelGPS = noiseModel.Diagonal.Precisions([ [0;0;0]; 1.0/0.07 * [1;1;1] ]);
 firstRTSLAMPose = 1;
@@ -53,6 +55,9 @@ sigma_between_b = [ 1.67e-4 * ones(3,1); 2.91e-6 * ones(3,1) ]; % Values taken f
 g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
+camera_intrinsic = ParseUblasVector(setupconfig.CAMERA1_INTRINSIC);
+
+camera_calibration = Cal3_S2(camera_intrinsic(3), camera_intrinsic(4), 0, camera_intrinsic(1), camera_intrinsic(2));
 
 %% Solver object
 isamParams = ISAM2Params;
@@ -67,6 +72,8 @@ newValues = Values;
 % (2) we create the corresponding factors in the graph
 % (3) we solve the graph to obtain and optimal estimate of robot trajectory
 IMUtimes = [IMU_data.Time];
+trackedlmks = [];
+adding_euc_lmks = false;
 
 disp('-- Starting main loop')
 % isamPlotted = false;
@@ -79,6 +86,9 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
     currentBiasKey = symbol('b',measurementIndex);
     t = RTSLAM_data(measurementIndex).r.date;
 
+    trackedlmks = TrackRTSLAMLmks(RTSLAM_data(measurementIndex),trackedlmks,currentPoseKey);
+
+    
     if measurementIndex == firstRTSLAMPose
         %% Create initial estimate and prior on initial pose, velocity, and biases
         newValues.insert(currentPoseKey, currentPoseGlobal);
@@ -127,6 +137,31 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
         newValues.insert(currentPoseKey, RTSLAMPose);
         newValues.insert(currentVelKey, currentVelocityGlobal); % CHECK: maybe add current velocity from the filter?
         newValues.insert(currentBiasKey, currentBias); % CHECK: maybe add current bias from the filter?
+    
+        % Check for euclidean landmarks and add factors if any.
+        eucLmkIndexes = find([trackedlmks.is_euclidean] > 0);
+        if numel(eucLmkIndexes) > 8
+            adding_euc_lmks = true;
+            for lmkIndex = eucLmkIndexes
+                currentLmkKey = symbol('l',lmkIndex);
+                for lmkMeasIndex = 1:numel(trackedlmks(lmkIndex).robot_pose_key)
+                    newFactors.add(GenericProjectionFactorCal3_S2( Point2(trackedlmks(lmkIndex).meas(:,:,lmkMeasIndex)), ...
+                        noiseModel.Isotropic.Sigma(2, 1.0), ...
+                        uint64(trackedlmks(lmkIndex).robot_pose_key(lmkMeasIndex)), ...
+                        currentLmkKey, ...
+                        camera_calibration));
+                end
+                trackedlmks(lmkIndex).meas = [];
+                trackedlmks(lmkIndex).robot_pose_key = uint64([]);
+                if ~trackedlmks(lmkIndex).being_updated
+                    if ~newValues.exists(currentLmkKey)
+                        newValues.insert(currentLmkKey,Point3(trackedlmks(lmkIndex).initial_value));
+                    else
+                        newValues.update(currentLmkKey,Point3(trackedlmks(lmkIndex).initial_value));
+                    end
+                end
+            end
+        end
         
         % Update solver
         % =====================================================================
@@ -136,6 +171,14 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
             isam.update(newFactors, newValues);
             newFactors = NonlinearFactorGraph;
             newValues = Values;
+            
+            if adding_euc_lmks
+                for lmkIndex = eucLmkIndexes
+                    if ~trackedlmks(lmkIndex).being_updated
+                        trackedlmks(lmkIndex).being_updated = true;
+                    end
+                end
+            end
             
             if rem(measurementIndex,10)==0 % plot every 10 time steps
                 cla;

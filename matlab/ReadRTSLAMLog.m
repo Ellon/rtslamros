@@ -2,18 +2,18 @@ function [log] = ReadRTSLAMLog(filename,options)
 
     if ~exist('options','var')
         % set default options for the function
-        options.read_lmk_events = false;
-        options.read_lmk_params = false;
+        options.read_lmk_events = true;
+        options.read_lmk_params = true;
         options.read_lmk_expectation = false;
         options.read_lmk_measurement = true;
         options.read_lmk_innovation = false;
     else
         % check if all suboptions exists, if not set the default
         if ~isfield(options,'read_lmk_events')
-            options.read_lmk_events = false;
+            options.read_lmk_events = true;
         end
         if ~isfield(options,'read_lmk_params')
-            options.read_lmk_params = false;
+            options.read_lmk_params = true;
         end
         if ~isfield(options,'read_lmk_expectation')
             options.read_lmk_expectation = false;
