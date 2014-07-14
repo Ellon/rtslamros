@@ -56,7 +56,10 @@ g = [0;0;-9.8];
 w_coriolis = [0;0;0];
 
 camera_intrinsic = ParseUblasVector(setupconfig.CAMERA1_INTRINSIC);
-
+camera_pose_vector = ParseUblasVector(setupconfig.CAMERA1_POSE_INERTIAL);
+camera_pose_vector(4:6) = (camera_pose_vector(4:6)/180)*pi;
+camera_pose = Pose3(Rot3(angle2dcm(camera_pose_vector(6),camera_pose_vector(5),camera_pose_vector(4),'ZYX')), ...
+                          Point3(camera_pose_vector(1:3)'));
 camera_calibration = Cal3_S2(camera_intrinsic(3), camera_intrinsic(4), 0, camera_intrinsic(1), camera_intrinsic(2));
 
 %% Solver object
@@ -149,7 +152,8 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
                         noiseModel.Isotropic.Sigma(2, 1.0), ...
                         uint64(trackedlmks(lmkIndex).robot_pose_key(lmkMeasIndex)), ...
                         currentLmkKey, ...
-                        camera_calibration));
+                        camera_calibration, ...
+                        camera_pose));
                 end
                 trackedlmks(lmkIndex).meas = [];
                 trackedlmks(lmkIndex).robot_pose_key = uint64([]);
