@@ -38,7 +38,7 @@ logfiles = dir(fullfile(options.rtslamlogpath,'*.log'));
 fulllogfiles = cellfun(@(S) fullfile(options.rtslamlogpath, S),{logfiles(1:end).name}, 'Uniform', 0);
 RTSLAM_data = arrayfun(@(x) ReadRTSLAMLog(x),fulllogfiles(1:options.rtslamlogsize));
 
-noiseModelGPS = noiseModel.Diagonal.Precisions([ [0;0;0]; 1.0/0.07 * [1;1;1] ]);
+noiseModelGPS = noiseModel.Diagonal.Precisions([ 1.0/(((2/180)*pi)^2) * [1;1;1]; 1.0/0.07 * [1;1;1] ]);
 firstRTSLAMPose = 1;
 RTSLAMskip = 10; % Skip this many RTSLAM data each time
 
@@ -48,7 +48,7 @@ currentPoseGlobal = Pose3(Rot3(quat2dcm(RTSLAM_data(firstRTSLAMPose).r.pose_mean
                           Point3(RTSLAM_data(firstRTSLAMPose).r.pose_mean(1:3))); % initial pose is the reference frame (navigation frame)
 currentVelocityGlobal = LieVector([0;0;0]); % the vehicle is stationary at the beginning
 currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
-sigma_init_x = noiseModel.Isotropic.Precisions([ 1; 1; 1; 1; 1; 1 ]); % We are quite sure the robot is at origin at the begining
+sigma_init_x = noiseModel.Isotropic.Sigmas([ 0; 0; 0; 0; 0; 0 ]); % We are quite sure the robot is at origin at the begining
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1000.0); % Even if the robot is stationary, we give an uncertainty on it's velocity.
 sigma_init_b = noiseModel.Isotropic.Sigmas([ 0.100; 0.100; 0.100; 5.00e-05; 5.00e-05; 5.00e-05 ]); % Values taken from Kitti example
 sigma_between_b = [ 1.67e-4 * ones(3,1); 2.91e-6 * ones(3,1) ]; % Values taken from IMU_metadata.AccelerometerBiasSigma and IMU_metadata.GyroscopeBiasSigma, from Kitti example
