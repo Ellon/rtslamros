@@ -53,6 +53,12 @@ function robot_log = LoadRobotLog(fid)
     robot_log.date = fread(fid, 1, 'double');
     robot_log.pose_mean = fread(fid, 7, 'double');
     robot_log.pose_cov = fread(fid, [7 7], 'double');
+    robot_log.vel_mean = fread(fid, 3, 'double');
+    robot_log.vel_cov = fread(fid, [3 3], 'double');
+    robot_log.abias_mean = fread(fid, 3, 'double');
+    robot_log.abias_cov = fread(fid, [3 3], 'double');
+    robot_log.wbias_mean = fread(fid, 3, 'double');
+    robot_log.wbias_cov = fread(fid, [3 3], 'double');
 end
 
 function lmk_log = LoadLandmarkLog(fid,options)
