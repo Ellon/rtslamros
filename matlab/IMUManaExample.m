@@ -8,8 +8,8 @@ options.rtslamlogpath = '/home/mellon/devel/var/rtslam_to_g2o/log5';
 options.rtslamlogsize = 1000;
 options.similarity_threshold = 0.3;
 
-options.use_rtslam_as_gps = false;
-options.use_const_bias = true;
+options.use_rtslam_as_gps = true;
+options.use_const_bias = false;
 options.use_projection = true;
 
 %% Read data
