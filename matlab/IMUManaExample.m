@@ -53,9 +53,10 @@ currentPoseGlobal = Pose3(Rot3(quat2dcm(RTSLAM_data(firstRTSLAMPose).r.pose_mean
 currentVelocityGlobal = LieVector(RTSLAM_data(firstRTSLAMPose).r.vel_mean); % the vehicle is stationary at the beginning
 currentBias = imuBias.ConstantBias(RTSLAM_data(firstRTSLAMPose).r.abias_mean, ... 
                                    RTSLAM_data(firstRTSLAMPose).r.wbias_mean);
-sigma_init_x = noiseModel.Isotropic.Sigmas([ 0; 0; 0; 0; 0; 0 ]); % We are quite sure the robot is at origin at the begining
-sigma_init_v = noiseModel.Isotropic.Sigma(3, 1000.0); % Even if the robot is stationary, we give an uncertainty on it's velocity.
-sigma_init_b = noiseModel.Isotropic.Sigmas([ 0.100; 0.100; 0.100; 5.00e-05; 5.00e-05; 5.00e-05 ]); % Values taken from Kitti example
+sigma_init_x = noiseModel.Isotropic.Sigmas([ str2double(setupconfig.UNCERT_ATTITUDE); str2double(setupconfig.UNCERT_ATTITUDE); str2double(setupconfig.UNCERT_HEADING); ...
+                                             0; 0; 0 ]); % We are quite sure the robot is at origin at the begining
+sigma_init_v = noiseModel.Isotropic.Sigmas(sqrt(diag(RTSLAM_data(firstRTSLAMPose).r.vel_cov))); % Even if the robot is stationary, we give an uncertainty on it's velocity.
+sigma_init_b = noiseModel.Isotropic.Sigmas([ sqrt(diag(RTSLAM_data(firstRTSLAMPose).r.abias_cov));sqrt(diag(RTSLAM_data(firstRTSLAMPose).r.wbias_cov)) ]); % Values taken from RTSLAM
 sigma_between_b = [ 1.67e-4 * ones(3,1); 2.91e-6 * ones(3,1) ]; % Values taken from IMU_metadata.AccelerometerBiasSigma and IMU_metadata.GyroscopeBiasSigma, from Kitti example
 g = [0;0;-9.8];
 w_coriolis = [0;0;0];
