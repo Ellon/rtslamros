@@ -8,6 +8,10 @@ options.rtslamlogpath = '/home/mellon/devel/var/rtslam_to_g2o/log5';
 options.rtslamlogsize = 1000;
 options.similarity_threshold = 0.3;
 
+options.use_rtslam_as_gps = false;
+options.use_const_bias = true;
+options.use_projection = true;
+
 %% Read data
 % Configuration files
 disp('-- Reading configuration files from RTSLAM dataset')
@@ -127,13 +131,15 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
         
         % Bias evolution as given in the IMU metadata
         % CHECK: How does the bias evolute in RT-SLAM?
-        newFactors.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
-            noiseModel.Diagonal.Sigmas(sqrt(numel(IMUindices)) * sigma_between_b)));
+        if options.use_const_bias
+            newFactors.add(BetweenFactorConstantBias(currentBiasKey-1, currentBiasKey, imuBias.ConstantBias(zeros(3,1), zeros(3,1)), ...
+                noiseModel.Diagonal.Sigmas(sqrt(numel(IMUindices)) * sigma_between_b)));
+        end
         
         % Create GPS factor
         RTSLAMPose = Pose3(Rot3(quat2dcm(RTSLAM_data(measurementIndex).r.pose_mean(4:7)')), ...
                            Point3(RTSLAM_data(measurementIndex).r.pose_mean(1:3)));
-        if mod(measurementIndex, RTSLAMskip) == 0 %CHECK: Add GPS measurements each GPSskip nodes
+        if options.use_rtslam_as_gps && mod(measurementIndex, RTSLAMskip) == 0 %CHECK: Add GPS measurements each GPSskip nodes
             newFactors.add(PriorFactorPose3(currentPoseKey, RTSLAMPose, noiseModelGPS));
         end
         
@@ -142,27 +148,31 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
         newValues.insert(currentVelKey, currentVelocityGlobal); % CHECK: maybe add current velocity from the filter?
         newValues.insert(currentBiasKey, currentBias); % CHECK: maybe add current bias from the filter?
     
-        % Check for euclidean landmarks and add factors if any.
-        eucLmkIndexes = find([trackedlmks.is_euclidean] > 0);
-        if numel(eucLmkIndexes) > 8
-            adding_euc_lmks = true;
-            for lmkIndex = eucLmkIndexes
-                currentLmkKey = symbol('l',lmkIndex);
-                for lmkMeasIndex = 1:numel(trackedlmks(lmkIndex).robot_pose_key)
-                    newFactors.add(GenericProjectionFactorCal3_S2( Point2(trackedlmks(lmkIndex).meas(:,:,lmkMeasIndex)), ...
-                        noiseModel.Isotropic.Sigma(2, 1.0), ...
-                        uint64(trackedlmks(lmkIndex).robot_pose_key(lmkMeasIndex)), ...
-                        currentLmkKey, ...
-                        camera_calibration, ...
-                        camera_pose.inverse));
-                end
-                trackedlmks(lmkIndex).meas = [];
-                trackedlmks(lmkIndex).robot_pose_key = uint64([]);
-                if ~trackedlmks(lmkIndex).being_updated
-                    if ~newValues.exists(currentLmkKey)
-                        newValues.insert(currentLmkKey,Point3(trackedlmks(lmkIndex).initial_value));
-                    else
-                        newValues.update(currentLmkKey,Point3(trackedlmks(lmkIndex).initial_value));
+        if options.use_projection
+            % Check for euclidean landmarks and add factors if any.
+            eucLmkIndexes = find([trackedlmks.is_euclidean] > 0);
+            
+            if numel(eucLmkIndexes) > 8
+                adding_euc_lmks = true;
+                for lmkIndex = eucLmkIndexes
+                    currentLmkKey = symbol('l',lmkIndex);
+                    for lmkMeasIndex = 1:numel(trackedlmks(lmkIndex).robot_pose_key)
+                        % TODO: Use GenericProjectionFactorCal3_S2(Point2 measured, Base noiseModel, size_t poseKey, size_t pointKey, Cal3_S2 k, Pose3 body_P_sensor)
+                        newFactors.add(GenericProjectionFactorCal3_S2( Point2(trackedlmks(lmkIndex).meas(:,:,lmkMeasIndex)), ...
+                            noiseModel.Isotropic.Sigma(2, 1.0), ...
+                            uint64(trackedlmks(lmkIndex).robot_pose_key(lmkMeasIndex)), ...
+                            currentLmkKey, ...
+                            camera_calibration, ...
+                            camera_pose.inverse));
+                    end
+                    trackedlmks(lmkIndex).meas = [];
+                    trackedlmks(lmkIndex).robot_pose_key = uint64([]);
+                    if ~trackedlmks(lmkIndex).being_updated
+                        if ~newValues.exists(currentLmkKey)
+                            newValues.insert(currentLmkKey,Point3(trackedlmks(lmkIndex).initial_value));
+                        else
+                            newValues.update(currentLmkKey,Point3(trackedlmks(lmkIndex).initial_value));
+                        end
                     end
                 end
             end
@@ -172,12 +182,13 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
         % =====================================================================
         % We accumulate 2*GPSskip GPS measurements before updating the solver
         % at first so that the heading becomes observable.
-        if measurementIndex > firstRTSLAMPose + 2*RTSLAMskip
+        if (options.use_rtslam_as_gps && options.use_const_bias && measurementIndex > firstRTSLAMPose + 2*RTSLAMskip) ...
+           || (options.use_projection && adding_euc_lmks)
             isam.update(newFactors, newValues);
             newFactors = NonlinearFactorGraph;
             newValues = Values;
             
-            if adding_euc_lmks
+            if options.use_projection && adding_euc_lmks
                 for lmkIndex = eucLmkIndexes
                     if ~trackedlmks(lmkIndex).being_updated
                         trackedlmks(lmkIndex).being_updated = true;
