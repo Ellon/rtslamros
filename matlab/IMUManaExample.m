@@ -77,6 +77,7 @@ newValues = Values;
 IMUtimes = [IMU_data.Time];
 trackedlmks = [];
 adding_euc_lmks = false;
+movie_index = 1;
 
 disp('-- Starting main loop')
 % isamPlotted = false;
@@ -193,6 +194,8 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
                 zlabel('z [m]')
                 axis equal
                 drawnow;
+                M(movie_index) = getframe(gcf);
+                movie_index = movie_index + 1;
             end
         % =====================================================================
 %             if ~isamPlotted
