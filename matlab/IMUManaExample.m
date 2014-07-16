@@ -4,7 +4,7 @@ disp('Example of application of ISAM2 for visual-inertial localization using RTS
 
 %% Define options for the example
 options.datapath = '/home/mellon/workspace/2012-10-17_caylus-rtslam';
-options.rtslamlogpath = '/home/mellon/devel/var/rtslam_to_g2o/log5';
+options.rtslamlogpath = '/home/mellon/devel/var/rtslam_to_g2o/log6';
 options.rtslamlogsize = 1000;
 options.similarity_threshold = 0.3;
 
@@ -50,8 +50,9 @@ RTSLAMskip = 10; % Skip this many RTSLAM data each time
 %% Initialization
 currentPoseGlobal = Pose3(Rot3(quat2dcm(RTSLAM_data(firstRTSLAMPose).r.pose_mean(4:7)')), ...
                           Point3(RTSLAM_data(firstRTSLAMPose).r.pose_mean(1:3))); % initial pose is the reference frame (navigation frame)
-currentVelocityGlobal = LieVector([0;0;0]); % the vehicle is stationary at the beginning
-currentBias = imuBias.ConstantBias(zeros(3,1), zeros(3,1));
+currentVelocityGlobal = LieVector(RTSLAM_data(firstRTSLAMPose).r.vel_mean); % the vehicle is stationary at the beginning
+currentBias = imuBias.ConstantBias(RTSLAM_data(firstRTSLAMPose).r.abias_mean, ... 
+                                   RTSLAM_data(firstRTSLAMPose).r.wbias_mean);
 sigma_init_x = noiseModel.Isotropic.Sigmas([ 0; 0; 0; 0; 0; 0 ]); % We are quite sure the robot is at origin at the begining
 sigma_init_v = noiseModel.Isotropic.Sigma(3, 1000.0); % Even if the robot is stationary, we give an uncertainty on it's velocity.
 sigma_init_b = noiseModel.Isotropic.Sigmas([ 0.100; 0.100; 0.100; 5.00e-05; 5.00e-05; 5.00e-05 ]); % Values taken from Kitti example
@@ -145,8 +146,9 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
         
         % Add initial value
         newValues.insert(currentPoseKey, RTSLAMPose);
-        newValues.insert(currentVelKey, currentVelocityGlobal); % CHECK: maybe add current velocity from the filter?
-        newValues.insert(currentBiasKey, currentBias); % CHECK: maybe add current bias from the filter?
+        newValues.insert(currentVelKey, LieVector(RTSLAM_data(measurementIndex).r.vel_mean)); % CHECK: maybe add current velocity from the filter?
+        newValues.insert(currentBiasKey, imuBias.ConstantBias(RTSLAM_data(measurementIndex).r.abias_mean, ... 
+                                                              RTSLAM_data(measurementIndex).r.wbias_mean)); % CHECK: maybe add current bias from the filter?
     
         if options.use_projection
             % Check for euclidean landmarks and add factors if any.
