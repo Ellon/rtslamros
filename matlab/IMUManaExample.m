@@ -81,6 +81,7 @@ newValues = Values;
 % (3) we solve the graph to obtain and optimal estimate of robot trajectory
 IMUtimes = [IMU_data.Time];
 trackedlmks = [];
+lmkmap = containers.Map('KeyType','double','ValueType','double');
 adding_euc_lmks = false;
 movie_index = 1;
 
@@ -95,7 +96,7 @@ for measurementIndex = firstRTSLAMPose:length(RTSLAM_data)
     currentBiasKey = symbol('b',measurementIndex);
     t = RTSLAM_data(measurementIndex).r.date;
 
-    trackedlmks = TrackRTSLAMLmks(RTSLAM_data(measurementIndex),trackedlmks,currentPoseKey);
+    [trackedlmks lmkmap] = TrackRTSLAMLmks(RTSLAM_data(measurementIndex),trackedlmks,lmkmap,currentPoseKey);
 
     
     if measurementIndex == firstRTSLAMPose
