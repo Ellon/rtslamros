@@ -1,38 +1,41 @@
 #!/usr/bin/env python
 '''
-Read IMU log file and image timestamps, and write a bag that publishes 
-IMU and image messages in order.
+Convert RTSLAM dataset to ROS bag
 
-Usage: 
-./rtslam_dataset_to_ros_bag.py <path-to-rtslam-dataset> <bagname>
+Usage:
+./rtslam_dataset_to_ros_bag.py <path-to-MTI.log-file> <path-to-image-dir> <bagname>
 '''
 
 import sys
-import math
+import rospy
 import rosbag
 from sensor_msgs.msg import Image, Imu
 
+mtilog_path = sys.argv[1]
+imagedir_path = sys.argv[2]
+bagname = sys.argv[3]
 
-data_path = sys.argv[1]
-bagname = sys.argv[2]
+with open(mtilog_path) as f:
+    lines = f.readlines()
 
-seq = 1;
-with rosbag.Bag(bagname, 'w') as outbag:
-	with open(data_path + 'MTI.log', 'r') as f:
-		for line in f:
-			imu_data = line[5:-1].split(',')
-			imu_msg = Imu()
-			imu_msg.header.seq = seq
-#			imu_msg.header.frame_id = ???
-			imu_msg.header.stamp.nsecs = int(math.modf(float(imu_data[0]))[0]*1e9)
-			imu_msg.header.stamp.secs = int(math.modf(float(imu_data[0]))[1])
-			imu_msg.linear_acceleration.x = float(imu_data[1])
-			imu_msg.linear_acceleration.y = float(imu_data[2])
-			imu_msg.linear_acceleration.z = float(imu_data[3])
-			imu_msg.angular_velocity.x = float(imu_data[4])
-			imu_msg.angular_velocity.y = float(imu_data[5])
-			imu_msg.angular_velocity.z = float(imu_data[6])
-			seq = seq + 1
-			outbag.write("imu", imu_msg, imu_msg.header.stamp)
+mti_data = [map(float, line.split()) for line in lines if not line.startswith('#')]
 
-	
+with rosbag.Bag(bagname, 'w') as bag:
+	imu_seq=1
+    for date, acc_x, acc_y, acc_z, angvel_x, angvel_y, angvel_z, mag_x, mag_y, mag_z in mti_data:
+		imu_msg = Imu()
+		imu_msg.header.stamp = rospy.Time.from_sec(date)
+		imu_msg.header.seq = imu_seq
+		# imu_msg.header.frame_id = ???
+		imu_msg.linear_acceleration.x = acc_x
+		imu_msg.linear_acceleration.y = acc_y
+		imu_msg.linear_acceleration.z = acc_z
+		imu_msg.angular_velocity.x = angvel_x
+		imu_msg.angular_velocity.y = angvel_y
+		imu_msg.angular_velocity.z = angvel_z
+		# Inform we doesn't have orientation estimates
+		# see http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html
+		imu_msg.orientation_covariance[0] = -1
+		bag.write("imu", imu_msg, imu_msg.header.stamp)
+		imu_seq += 1
+
