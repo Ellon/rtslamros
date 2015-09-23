@@ -34,6 +34,6 @@ with rosbag.Bag("imu.bag", 'w') as bag:
 		# Inform we doesn't have orientation estimates
 		# see http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html
 		imu_msg.orientation_covariance[0] = -1
-		bag.write("imu", imu_msg, imu_msg.header.stamp)
+		bag.write("/imu/data", imu_msg, imu_msg.header.stamp)
 		imu_msg.header.seq += 1
 
