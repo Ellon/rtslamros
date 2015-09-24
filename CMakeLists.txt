@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED COMPONENTS thread system filesystem regex serialization program_options)
 
-## Look for Jafar library 
+## Look for Jafar library
 ##   A separation into "REQUIRED (...) COMPONENTS (...)" should be able to separate
 ##   optional components from required ones, but it's not so easy to do that.
 find_package(Jafar REQUIRED kernel jmath image correl rtslam COMPONENTS gdhe qdisplay)
@@ -150,7 +150,7 @@ include_directories(
 # add_library(rtslamros
 #   src/${PROJECT_NAME}/rtslamros.cpp
 # )
-add_library(librtslamros
+add_library(rtslamros_sensors
   src/hardwareSensorMtiRos.cpp
   src/hardwareSensorCameraRos.cpp
 )
@@ -167,10 +167,11 @@ add_executable(simplertslamros_node src/simplertslamros_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(rtslamros_node
-  librtslamros
+  rtslamros_sensors
   ${Jafar_LIBRARIES}
   ${GDHE_LIBRARY}
   ${OpenCV_LIBS}
+  ${QT_LIBRARIES}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
@@ -185,7 +186,7 @@ target_link_libraries(jafardemo_node
 )
 
 target_link_libraries(simplertslamros_node
-  librtslamros
+  rtslamros_sensors
   ${Jafar_LIBRARIES}
   ${GDHE_LIBRARY}
   ${QT_LIBRARIES}
