@@ -17,10 +17,10 @@
 
 #include "rtslam/rtslamException.hpp"
 
-namespace jafar {
 namespace rtslamros {
 namespace hardware {
 
+using namespace jafar;
 using namespace jafar::rtslam;
 using namespace jafar::rtslam::hardware;
 
@@ -175,6 +175,22 @@ HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condi
 	initialized_ = false; // Needed to wait for the topics to be published.
 }
 
+HardwareSensorMtiRos::HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, int bufferSize_,
+										   Mode mode, std::string dump_path, kernel::LoggerTask *loggerTask):
+	HardwareSensorProprioAbstract(condition, mode, bufferSize_, ctNone),
+	dump_path(dump_path),
+	loggerTask(loggerTask)
+{
+	if (mode == mOnlineDump && !loggerTask) JFR_ERROR(RtslamException, rtslam::RtslamException::GENERIC_ERROR, "HardwareSensorMtiRos: you must provide a loggerTask if you want to dump data.");
+	addQuantity(qAcc);
+	addQuantity(qAngVel);
+	addQuantity(qMag);
+	initData();
+
+	nh.setCallbackQueue(&imu_callback_queue);
+	initialized_ = false; // Needed to wait for the topics to be published.
+}
+
 HardwareSensorMtiRos::~HardwareSensorMtiRos()
 {
 }
@@ -220,4 +236,4 @@ void HardwareSensorMtiRos::setSyncConfig(double timestamps_correction/*, bool ti
 	//this->tight_offset = tight_offset;
 }
 
-}}}
+}}

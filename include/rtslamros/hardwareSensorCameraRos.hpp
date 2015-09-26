@@ -22,7 +22,6 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
 
-namespace jafar {
 namespace rtslamros {
 namespace hardware {
 
@@ -30,7 +29,7 @@ namespace hardware {
 This class allows to get images from firewire with non blocking procedure,
 using triple-buffering.
 */
-class HardwareSensorCameraRos: public rtslam::hardware::HardwareSensorCamera
+class HardwareSensorCameraRos: public jafar::rtslam::hardware::HardwareSensorCamera
 {
 private:
 	ros::NodeHandle nh;
@@ -45,7 +44,7 @@ private:
 
 	virtual void preloadTask(void);
 
-	void init(rtslam::hardware::Mode mode, std::string dump_path, cv::Size imgSize);
+	void init(jafar::rtslam::hardware::Mode mode, std::string dump_path, cv::Size imgSize);
 	void initCameraRos(double init_time, cv::Size &imgSize);
 
 	unsigned CAMERA_IMG_WIDTH;     ///< image width
@@ -56,12 +55,17 @@ private:
 public:
 
 	/// Constructor when working online. Initialize Camera params from ROS topic
-	HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id,
-							double init_time, int bufferSize, kernel::LoggerTask *loggerTask = NULL,std::string dump_path = ".");
+	HardwareSensorCameraRos(jafar::kernel::VariableCondition<int> *condition, jafar::rtslam::hardware::Mode mode, int cam_id,
+							double init_time, int bufferSize, jafar::kernel::LoggerTask *loggerTask = NULL,std::string dump_path = ".");
 
 	/// Constructor when working offline
-	HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, rtslam::hardware::Mode mode, int cam_id, cv::Size imgSize,
-							double freq, int bufferSize, kernel::LoggerTask *loggerTask = NULL,std::string dump_path = ".");
+	HardwareSensorCameraRos(jafar::kernel::VariableCondition<int> *condition, jafar::rtslam::hardware::Mode mode, int cam_id, cv::Size imgSize,
+							double freq, int bufferSize, jafar::kernel::LoggerTask *loggerTask = NULL,std::string dump_path = ".");
+
+	// Simpler constructor
+	HardwareSensorCameraRos(jafar::kernel::VariableCondition<int> *condition, int cam_id, cv::Size imgSize,
+							int bufferSize, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOffline,
+							std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
 
 
 	~HardwareSensorCameraRos();
@@ -82,6 +86,6 @@ public:
 
 typedef boost::shared_ptr<HardwareSensorCameraRos> hardware_sensor_camera_ros_ptr_t;
 
-}}}
+}}
 
 #endif

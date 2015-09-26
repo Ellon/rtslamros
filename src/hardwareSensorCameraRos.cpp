@@ -20,10 +20,10 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 
-namespace jafar {
 namespace rtslamros {
 namespace hardware {
 
+using namespace jafar;
 using namespace jafar::rtslam;
 using namespace jafar::rtslam::hardware;
 
@@ -72,7 +72,8 @@ void HardwareSensorCameraRos::init_callback(const sensor_msgs::Image& msg)
 
 
 void HardwareSensorCameraRos::preloadTask(void)
-{ JFR_GLOBAL_TRY
+{JFR_GLOBAL_TRY
+
 	//struct timeval ts, *pts = &ts;
 	int r;
 	bool last_ok = true;
@@ -204,6 +205,13 @@ HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> 
 		initialized_ = false; // Needed to wait for the topics to be published.
 	}
 
+HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> *condition, int cam_id, cv::Size imgSize,
+							int bufferSize, jafar::rtslam::hardware::Mode mode, std::string dump_path, jafar::kernel::LoggerTask *loggerTask) :
+  HardwareSensorCamera(condition, mode, cam_id, bufferSize, loggerTask)
+{
+
+}
+
 
 	HardwareSensorCameraRos::~HardwareSensorCameraRos()
 	{
@@ -213,5 +221,5 @@ HardwareSensorCameraRos::HardwareSensorCameraRos(kernel::VariableCondition<int> 
 		}
 	}
 
-}}}
+}}
 

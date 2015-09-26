@@ -16,20 +16,19 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 
-#include "jmath/jblas.hpp"
-#include "jmath/indirectArray.hpp"
+#include <jmath/jblas.hpp>
+#include <jmath/indirectArray.hpp>
 
-#include "rtslam/hardwareSensorAbstract.hpp"
+#include <rtslam/hardwareSensorAbstract.hpp>
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <sensor_msgs/Imu.h>
 
-namespace jafar {
 namespace rtslamros {
 namespace hardware {
 
-class HardwareSensorMtiRos: public rtslam::hardware::HardwareSensorProprioAbstract
+class HardwareSensorMtiRos: public jafar::rtslam::hardware::HardwareSensorProprioAbstract
 {
 private:
 	ros::NodeHandle nh;
@@ -38,7 +37,7 @@ private:
 	std::string dump_path;
 	double realFreq;
 	double last_timestamp;
-	kernel::LoggerTask *loggerTask;
+	jafar::kernel::LoggerTask *loggerTask;
 
 	boost::thread *preloadTask_thread;
 	void preloadTask(void);
@@ -52,13 +51,18 @@ private:
 
 public:
 	/// Constructor when working online. Initialize MTI params from ROS topic
-	HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, int bufferSize_, double init_time, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOnline,
-						 std::string dump_path = ".", kernel::LoggerTask *loggerTask = NULL);
+	HardwareSensorMtiRos(jafar::kernel::VariableCondition<int> *condition, int bufferSize_, double init_time, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOnline,
+						 std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
 
 	/// Constructor when working offline.
-	HardwareSensorMtiRos(kernel::VariableCondition<int> *condition, double trigger_mode,
+	HardwareSensorMtiRos(jafar::kernel::VariableCondition<int> *condition, double trigger_mode,
 						 double trigger_freq, double trigger_shutter, int bufferSize_, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOffline,
-						 std::string dump_path = ".", kernel::LoggerTask *loggerTask = NULL);
+						 std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
+
+	/// Simple Constructor
+	HardwareSensorMtiRos(jafar::kernel::VariableCondition<int> *condition, int bufferSize_, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOffline,
+						 std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
+
 	~HardwareSensorMtiRos();
 	virtual void start();
 	virtual void stop();
@@ -75,12 +79,12 @@ public:
 	/**
 	 * @return data with 10 columns: time, accelero (3), gyro (3), magneto (3)
 	 */
-	jblas::ind_array instantValues() { return jmath::ublasExtra::ia_set(1,10); }
-	jblas::ind_array incrementValues() { return jmath::ublasExtra::ia_set(1,1); }
+	jblas::ind_array instantValues() { return jafar::jmath::ublasExtra::ia_set(1,10); }
+	jblas::ind_array incrementValues() { return jafar::jmath::ublasExtra::ia_set(1,1); }
 
 	double getFreq() { return realFreq; } // trigger freq
 };
 
-}}}
+}}
 
 #endif //HARDWARE_SENSOR_MTI_ROS_HPP_

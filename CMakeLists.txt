@@ -11,8 +11,13 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  sensor_msgs
+  visualization_msgs
+  image_transport
   cv_bridge
   tf
+  vikit_common
+  vikit_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -150,16 +155,24 @@ include_directories(
 # add_library(rtslamros
 #   src/${PROJECT_NAME}/rtslamros.cpp
 # )
-add_library(rtslamros_sensors
+add_library(rtslamros_hardware
   src/hardwareSensorMtiRos.cpp
   src/hardwareSensorCameraRos.cpp
 )
 
+add_library(rtslamros_core
+  src/monoInertialSlam.cpp
+  src/configEstimation.cpp
+  src/configMonoInertial.cpp
+
+)
 
 ## Declare a cpp executable
 add_executable(rtslamros_node src/rtslamros_node.cpp)
 add_executable(jafardemo_node src/jafardemo_node.cpp)
 add_executable(simplertslamros_node src/simplertslamros_node.cpp)
+add_executable(monoinertial_node src/monoinertial_node.cpp)
+
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -167,7 +180,7 @@ add_executable(simplertslamros_node src/simplertslamros_node.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(rtslamros_node
-  rtslamros_sensors
+  rtslamros_hardware
   ${Jafar_LIBRARIES}
   ${GDHE_LIBRARY}
   ${OpenCV_LIBS}
@@ -186,12 +199,19 @@ target_link_libraries(jafardemo_node
 )
 
 target_link_libraries(simplertslamros_node
-  rtslamros_sensors
+  rtslamros_hardware
   ${Jafar_LIBRARIES}
   ${GDHE_LIBRARY}
   ${QT_LIBRARIES}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
+)
+
+target_link_libraries(monoinertial_node
+  rtslamros_core
+  rtslamros_hardware
+  ${Jafar_LIBRARIES}
+  ${catkin_LIBRARIES}
 )
 
 

@@ -65,21 +65,21 @@
 /*
  * STATUS: in progress, do not use for now
  * Only update if expectation uncertainty is significant wrt measurement uncertainty.
- * 
+ *
  * Large updates are causing inconsistency because of linearization errors,
- * but too numerous updates are also causing inconsistency, 
- * so we should avoid to do not significant updates. 
- * An update is not significant if there are large odds that it is 
+ * but too numerous updates are also causing inconsistency,
+ * so we should avoid to do not significant updates.
+ * An update is not significant if there are large odds that it is
  * only measurement noise and that there is not much information.
- * 
+ *
  * When the camera is not moving at all, the landmarks are converging anyway
- * quite fast because of this, at very unconsistent positions of course, 
+ * quite fast because of this, at very unconsistent positions of course,
  * so that when the camera moves it cannot recover them.
- * 
+ *
  * Some work needs to be done yet to prevent search ellipses from growing
  * too much and integrate it better with the whole management, but this was
  * for first evaluation purpose.
- * 
+ *
  * Unfortunately it doesn't seem to improve much the situation, even if
  * it is still working correctly with less computations.
  * The feature is disabled for now.
@@ -194,7 +194,7 @@
 #include "rtslam/hardwareSensorMti.hpp"
 #include "rtslam/hardwareSensorGpsGenom.hpp"
 #include "rtslam/hardwareSensorMocap.hpp"
-#include "rtslam/hardwareEstimatorOdo.hpp" 
+#include "rtslam/hardwareEstimatorOdo.hpp"
 #include "rtslam/hardwareSensorExternalLoc.hpp"
 #include "rtslam/hardwareSensorOdomRmp400Genom.hpp"
 
@@ -366,14 +366,14 @@ class ConfigSetup: public kernel::KeyValueFileSaveLoad
 	double INITIAL_HEADING;  ///< initial heading of the real robot (0 is east, positive is toward north, rad)
 	double UNCERT_HEADING;   ///< initial heading uncertainty of the real robot (rad)
 	double UNCERT_ATTITUDE;  ///< initial attitude angles uncertainty (rad)
-	
+
 	double IMU_TIMESTAMP_CORRECTION; ///< correction to add to the IMU timestamp for synchronization (s)
 	double GPS_TIMESTAMP_CORRECTION; ///< correction to add to the GPS timestamp for synchronization (s)
-	
+
 	/// Odometry noise variance to distance ratios
 	double dxNDR;   ///< Odometry noise in position increment (m per sqrt(m))
 	double dvNDR;   ///< Odometry noise in orientation increment (rad per sqrt(m))
-	
+
 	double ODO_TIMESTAMP_CORRECTION;  ///< correction to add to the odometry timestamp for synchronization (s)
 	jblas::vec4 ODO_CALIB; ///< multiplicative correction for odometry wheel size (lf, rf, lb, rb)
 	double GPS_MAX_CONSIST_SIG; ///< max sigma with guaranteed consistency (reflections can cause inconsistency)
@@ -392,7 +392,7 @@ class ConfigSetup: public kernel::KeyValueFileSaveLoad
 	double SIMU_IMU_ACC_GAIN;
 	double SIMU_IMU_ACC_GAIN_NOISESTD;
 	double SIMU_IMU_RANDWALKACC_FACTOR;
-	
+
  private:
   void processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile, bool read);
  public:
@@ -452,7 +452,7 @@ class ConfigEstimation: public kernel::KeyValueFileSaveLoad
 	double HI_MATCH_TH;        ///< higher ZNCC score threshold for landmarks with high depth uncertainty and high expectation uncertainty
 	double HI_LIMIT;           ///< limit in pixels of the expectation uncertainty to use HI_MATCH_TH
 	double PARTIAL_POSITION;   ///< position in the patch where we test if we finish the correlation computation
-	
+
  private:
   void processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile, bool read);
  public:
@@ -586,7 +586,7 @@ bool demo_slam_init()
 	std::cout << "Loading config files " << strOpts[sConfigSetup] << " and " << strOpts[sConfigEstimation] << std::endl;
 	configSetup.load(strOpts[sConfigSetup]);
 	configEstimation.load(strOpts[sConfigEstimation]);
-	
+
 	/// deal with the random seed
 	rseed = jmath::get_srand();
 	if (intOpts[iRandSeed] != 0 && intOpts[iRandSeed] != 1)
@@ -621,7 +621,7 @@ bool demo_slam_init()
 	{
 		#if ATRV
 		display::ViewerGdhe *viewerGdhe = new display::ViewerGdhe("atrv", configEstimation.MAHALANOBIS_TH, "localhost");
-		#else	
+		#else
 		display::ViewerGdhe *viewerGdhe = new display::ViewerGdhe("camera", configEstimation.MAHALANOBIS_TH, "localhost");
 		#endif
 		boost::filesystem::path ram_path("/mnt/ram");
@@ -630,7 +630,7 @@ bool demo_slam_init()
 		worldPtr->addDisplayViewer(viewerGdhe, display::ViewerGdhe::id());
 	}
 	#endif
-	
+
 	/// init logger
     if (!strOpts[sLog].empty() || intOpts[iDump])
 		loggerTask.reset(new kernel::LoggerTask(display_niceness));
@@ -724,7 +724,7 @@ bool demo_slam_init()
 	// create map
 	map_ptr_t mapPtr(new MapAbstract(configEstimation.MAP_SIZE));
 	mapPtr->linkToParentWorld(worldPtr);
-	
+
 	 // 1b. Create map manager.
 	landmark_factory_ptr_t pointLmkFactory;
 	landmark_factory_ptr_t segLmkFactory;
@@ -866,11 +866,11 @@ bool demo_slam_init()
 				{ points[i][0] = x*1.0+100; points[i][1] = y*10.0; points[i][2] = z*10.0; }
 			break;
 		}
-		
+
 			default: npoints = 0;
 		#endif
 		}
-		
+
 		// add landmarks
 		for(int i = 0; i < npoints; ++i)
 		{
@@ -964,15 +964,15 @@ bool demo_slam_init()
 /*			boost::shared_ptr<hardware::HardwareEstimatorInertialAdhocSimulator> hardEst1_(
 				new hardware::HardwareEstimatorInertialAdhocSimulator(configSetup.SIMU_IMU_FREQ, 50, simulator, robPtr1_->id()));
 			hardEst1_->setSyncConfig(configSetup.SIMU_IMU_TIMESTAMP_CORRECTION);
-			
-			hardEst1_->setErrors(configSetup.SIMU_IMU_GRAVITY, 
+
+			hardEst1_->setErrors(configSetup.SIMU_IMU_GRAVITY,
 				configSetup.SIMU_IMU_GYR_BIAS, configSetup.SIMU_IMU_GYR_BIAS_NOISESTD,
 				configSetup.SIMU_IMU_GYR_GAIN, configSetup.SIMU_IMU_GYR_GAIN_NOISESTD,
 				configSetup.SIMU_IMU_RANDWALKGYR_FACTOR * configSetup.PERT_RANWALKGYRO,
 				configSetup.SIMU_IMU_ACC_BIAS, configSetup.SIMU_IMU_ACC_BIAS_NOISESTD,
 				configSetup.SIMU_IMU_ACC_GAIN, configSetup.SIMU_IMU_ACC_GAIN_NOISESTD,
 				configSetup.SIMU_IMU_RANDWALKACC_FACTOR * configSetup.PERT_RANWALKACC);
-			
+
 			hardEst1 = hardEst1_;
 */		} else
 		{
@@ -997,18 +997,18 @@ bool demo_slam_init()
 /*		robodo_ptr_t robPtr1_(new RobotOdometry(mapPtr));
 		std::cout<<"configSetup.dxNDR "<<configSetup.dxNDR<<std::endl;
 		std::cout<<"configSetup.dvNDR "<<configSetup.dvNDR<<std::endl;
-		double _v[6] = {configSetup.dxNDR, configSetup.dxNDR, configSetup.dxNDR, 
+		double _v[6] = {configSetup.dxNDR, configSetup.dxNDR, configSetup.dxNDR,
 						configSetup.dvNDR, configSetup.dvNDR, configSetup.dvNDR};
 		vec pertStd = createVector<6>(_v);
 		robPtr1_->perturbation.set_std_continuous(pertStd);
-		
+
 		hardware::hardware_estimator_ptr_t hardEst2;
 		boost::shared_ptr<hardware::HardwareEstimatorOdo> hardEst2_(new hardware::HardwareEstimatorOdo(
 				intOpts[iTrigger], floatOpts[fFreq], floatOpts[fShutter], 1024, mode, strOpts[sDataPath]));
 		if (intOpts[iTrigger] != 0) floatOpts[fFreq] = hardEst2_->getFreq();
 		hardEst2_->setSyncConfig(configSetup.POS_TIMESTAMP_CORRECTION);
 		hardEst2 = hardEst2_;
-		robPtr1_->setHardwareEstimator(hardEst2);	
+		robPtr1_->setHardwareEstimator(hardEst2);
 		robPtr1 = robPtr1_;
 		*/
 	}
@@ -1032,7 +1032,7 @@ bool demo_slam_init()
 	{
 		simu::Robot *rob = new simu::Robot(robPtr1->id(), 6);
 		if (dataLogger) dataLogger->addLoggable(*rob);
-		
+
 		switch (intOpts[iSimu]%10)
 		{
 			// horiz loop, no rotation
@@ -1055,16 +1055,16 @@ bool demo_slam_init()
 				rob->addWaypoint(0 ,0 ,+1, 0,0,0, 0,-VEL,0   , 0,0,0);
 				rob->addWaypoint(0 ,-1,0 , 0,0,0, 0,0   ,-VEL, 0,0,0);
 				rob->addWaypoint(0 ,0 ,-1, 0,0,0, 0,+VEL,0   , 0,0,0);
-				
+
 				rob->addWaypoint(0 ,+1,0 , 0,0,0, 0,0   ,+VEL, 0,0,0);
 				rob->addWaypoint(0 ,0 ,+1, 0,0,0, 0,-VEL,0   , 0,0,0);
 				rob->addWaypoint(0 ,-1,0 , 0,0,0, 0,0   ,-VEL, 0,0,0);
 				rob->addWaypoint(0 ,0 ,-1, 0,0,0, 0,+VEL,0   , 0,0,0);
-				
+
 				rob->addWaypoint(0 ,+1,0 , 0,0,0, 0,0   ,+VEL, 0,0,0);
 				break;
 			}
-		
+
 			// two non-coplanar circles at constant velocity
 			case 3: {
 				double VEL = 0.5;
@@ -1072,12 +1072,12 @@ bool demo_slam_init()
 				rob->addWaypoint(0.25,0 ,+1, 0,0,0, VEL/4,-VEL,0   , 0,0,0);
 				rob->addWaypoint(0.5 ,-1,0 , 0,0,0, 0,0   ,-VEL, 0,0,0);
 				rob->addWaypoint(0.25,0 ,-1, 0,0,0, -VEL/4,+VEL,0   , 0,0,0);
-				
+
 				rob->addWaypoint(0    ,+1,0 , 0,0,0, 0,0   ,+VEL, 0,0,0);
 				rob->addWaypoint(-0.25,0 ,+1, 0,0,0, -VEL/4,-VEL,0   , 0,0,0);
 				rob->addWaypoint(-0.5 ,-1,0 , 0,0,0, 0,0   ,-VEL, 0,0,0);
 				rob->addWaypoint(-0.25,0 ,-1, 0,0,0, VEL/4,+VEL,0   , 0,0,0);
-				
+
 				rob->addWaypoint(0 ,+1,0 , 0,0,0, 0,0   ,+VEL, 0,0,0);
 				break;
 			}
@@ -1091,18 +1091,18 @@ bool demo_slam_init()
 				rob->addWaypoint(0.25,0 ,+1, 0,0,0, VEL/4,-VEL,0   , 0,0,0);
 				rob->addWaypoint(0.5 ,-1,0 , 0,0,0, 0,0   ,-VEL, 0,0,0);
 				rob->addWaypoint(0.25,0 ,-1, 0,0,0, -VEL/4,+VEL,0   , 0,0,0);
-				
+
 				rob->addWaypoint(0    ,+1,0 , 0,0,0, 0,0   ,+VEL, 0,0,0);
 				rob->addWaypoint(-0.25,0 ,+1, 0,0,0, -VEL/4,-VEL,0   , 0,0,0);
 				rob->addWaypoint(-0.5 ,-1,0 , 0,0,0, 0,0   ,-VEL, 0,0,0);
 				rob->addWaypoint(-0.25,0 ,-1, 0,0,0, VEL/4,+VEL,0   , 0,0,0);
-				
+
 				rob->addWaypoint(0 ,+1,-0.5 , 0,0,0, 0,0   ,+VEL/2, 0,0,0);
 				rob->addWaypoint(0 ,+1,-0.1 , 0,0,0, 0,0   ,+VEL/2, 0,0,0);
 				rob->addWaypoint(0 ,+1,0 , 0,0,0, 0,0   ,0, 0,0,0);
 				break;
 			}
-		
+
 			// horiz loop with rotation (always goes forward)
 			case 5: {
 				double VEL = 0.5;
@@ -1116,7 +1116,7 @@ bool demo_slam_init()
 				rob->addWaypoint(0,0,0, 4*M_PI/2,0,0, 0,0,0, 0,0,0);
 				break;
 			}
-		
+
 			// straight line
 			case 6: {
 				double VEL = 0.5;
@@ -1128,11 +1128,11 @@ bool demo_slam_init()
 		}
 
 		simulator->addRobot(rob);
-		
+
 	}
-	
+
 //robPtr1->setPoseStd(0, 0, 0, 0, 0, 0, 20, 20, 20, 10, 10, 10, true);
-	
+
 	/// ---------------------------------------------------------------------------
 	/// --- INIT SENSORS ----------------------------------------------------------
 	/// ---------------------------------------------------------------------------
@@ -1486,7 +1486,7 @@ bool demo_slam_init()
 	{
 		viewerQt = PTR_CAST<display::ViewerQt*> (worldPtr->getDisplayViewer(display::ViewerQt::id()));
 		viewerQt->bufferize(worldPtr);
-		
+
 		// initializing stuff for controlling run/pause from viewer
 		boost::unique_lock<boost::mutex> runStatus_lock(viewerQt->runStatus.mutex);
 		viewerQt->runStatus.pause = intOpts[iPause];
@@ -1677,7 +1677,7 @@ void demo_slam_main(world_ptr_t *world)
 		kernel::setCurrentThreadScheduler(slam_sched, slam_priority);
 
 	robot_ptr_t robotPtr;
-		
+
 	// wait for display to be ready if enabled
 	if (intOpts[iDispQt] || intOpts[iDispGdhe])
 	{
@@ -1759,7 +1759,7 @@ void demo_slam_main(world_ptr_t *world)
 	}
 	std::cout << "slam start date: " << std::setprecision(16) << start_date << std::endl;
 	sensorManager->setStartDate(start_date);
-	
+
 	// start other hardware sensors
 	for (MapAbstract::RobotList::iterator robIter = mapPtr->robotList().begin();
 		robIter != mapPtr->robotList().end(); ++robIter)
@@ -1782,7 +1782,7 @@ void demo_slam_main(world_ptr_t *world)
 	double average_robot_innovation_ori = 0.;
 	int n_innovation = 0;
 	#endif
-	
+
 	// ---------------------------------------------------------------------------
 	// --- LOOP ------------------------------------------------------------------
 	// ---------------------------------------------------------------------------
@@ -1803,7 +1803,7 @@ void demo_slam_main(world_ptr_t *world)
 
 		SensorManagerAbstract::ProcessInfo pinfo = sensorManager->getNextDataToUse(filterTime);
 		bool no_more_data = pinfo.no_more_data;
-		
+
 		if (pinfo.sen)
 		{
 			had_data = true;
@@ -1816,9 +1816,9 @@ void demo_slam_main(world_ptr_t *world)
 				#if SHOW_PERIODIC_SENSORS_INFOS
 				if (newt > next_show_infos) { showSensorsInfos(mapPtr); next_show_infos = newt+2.; }
 				#endif
-				
+
 				JFR_DEBUG("************** FRAME : " << (*world)->t << " (" << std::setprecision(16) << newt << std::setprecision(6) << ") sensor " << pinfo.sen->id());
-				
+
 //std::cout << "Frame " << (*world)->t << " using sen " << pinfo.sen->id() << " at time " << std::setprecision(16) << newt << std::endl;
 
 				// wait to have all the estimator data (ie one after newt) to do this move,
@@ -1858,13 +1858,13 @@ void demo_slam_main(world_ptr_t *world)
 					robPtr->reinit_extrapolate();
 					ready = true;
 				}
-				
+
 				JFR_DEBUG("Robot " << robPtr->id() << " state after move " << robPtr->state.x() << " ; euler " << quaternion::q2e(ublas::subrange(robPtr->state.x(), 3, 7)));
 				JFR_DEBUG("Robot state stdev after move " << stdevFromCov(robPtr->state.P()));
 				#if STATS
 				robot_prediction = robPtr->pose.x();
 				#endif
-				
+
 				#if REAL_TIME_LIVE_RUN
 				pinfo.sen->process(pinfo.id, pinfo.date_next);
 				#else
@@ -1876,7 +1876,7 @@ void demo_slam_main(world_ptr_t *world)
 				pinfo.sen->robotPtr()->historyManager->process(newt);
 				//pinfo.sen->robotPtr()->historyManager->print();
 				#endif
-				
+
 				JFR_DEBUG("Robot state after corrections of sensor " << pinfo.sen->id() << " : " << robPtr->state.x() << " ; euler " << quaternion::q2e(ublasExtra::normalized(ublas::subrange(robPtr->state.x(), 3, 7))));
 				JFR_DEBUG("Robot state stdev after corrections " << stdevFromCov(robPtr->state.P()));
 				#if STATS
@@ -1884,7 +1884,7 @@ void demo_slam_main(world_ptr_t *world)
 				average_robot_innovation_ori += ublas::norm_2(ublas::subrange(robPtr->pose.x(),3,7) - ublas::subrange(robot_prediction,3,7));
 				n_innovation++;
 				#endif
-				
+
 				robPtr->reinit_extrapolate();
 				double processed_date = kernel::Clock::getTime();
 				if (exporter && ready) exporter->exportCurrentState();
@@ -1893,7 +1893,7 @@ void demo_slam_main(world_ptr_t *world)
 			}
 			filterTime = robPtr->self_time;
 		}
-		
+
 
 		// wait that display has finished if render all
 		if (had_data)
@@ -1919,7 +1919,7 @@ void demo_slam_main(world_ptr_t *world)
 			}
 		}
 
-		
+
 		// asking for display if display has finished
 		unsigned processed_t = (had_data ? (*world)->t : (*world)->t-1);
 		if ((*world)->display_t+1 < processed_t+1)
@@ -1937,7 +1937,7 @@ void demo_slam_main(world_ptr_t *world)
 				if (intOpts[iDispGdhe]) viewerGdhe = PTR_CAST<display::ViewerGdhe*> ((*world)->getDisplayViewer(display::ViewerGdhe::id()));
 				if (intOpts[iDispGdhe]) viewerGdhe->bufferize(*world);
 				#endif
-				
+
 				(*world)->display_t = (*world)->t;
 				(*world)->display_rendered = false;
 				display_lock.unlock();
@@ -1945,7 +1945,7 @@ void demo_slam_main(world_ptr_t *world)
 			} else
 			display_lock.unlock();
 		}
-		
+
 		if (no_more_data) break;
 
 		if (!had_data)
@@ -2060,13 +2060,13 @@ void demo_slam_display(world_ptr_t *world)
 				if (intOpts[iDispGdhe]) viewerGdhe = PTR_CAST<display::ViewerGdhe*> ((*world)->getDisplayViewer(display::ViewerGdhe::id()));
 				if (intOpts[iDispGdhe]) viewerGdhe->bufferize(*world);
 				#endif
-				
+
 				(*world)->display_t = (*world)->t;
 				(*world)->display_rendered = false;
 			}
 		}
 		blocked_lock.unlock();
-		
+
 		// waiting that display is ready
 // std::cout << "DISPLAY: waiting for data" << std::endl;
 		boost::unique_lock<boost::mutex> display_lock((*world)->display_mutex);
@@ -2095,12 +2095,12 @@ void demo_slam_display(world_ptr_t *world)
 //		{
 //			prev_t = (*world)->t;
 //			(*world)->display_rendered = (*world)->t;
-			
+
 //		!bufferize!
 
 //			if (!intOpts[iRenderAll]) // strange: if we always unlock here, qt.dump takes much more time...
 //				(*world)->display_mutex.unlock();
-				
+
 			#ifdef HAVE_MODULE_QDISPLAY
 			display::ViewerQt *viewerQt = NULL;
 			if (intOpts[iDispQt]) viewerQt = PTR_CAST<display::ViewerQt*> ((*world)->getDisplayViewer(display::ViewerQt::id()));
@@ -2111,7 +2111,7 @@ void demo_slam_display(world_ptr_t *world)
 			if (intOpts[iDispGdhe]) viewerGdhe = PTR_CAST<display::ViewerGdhe*> ((*world)->getDisplayViewer(display::ViewerGdhe::id()));
 			if (intOpts[iDispGdhe]) viewerGdhe->render();
 			#endif
-			
+
 			if (((intOpts[iReplay] & 1) || intOpts[iSimu]) && (intOpts[iDump] & 1) && (*world)->display_t+1 != 0)
 			{
 				#ifdef HAVE_MODULE_QDISPLAY
@@ -2141,10 +2141,10 @@ void demo_slam_display(world_ptr_t *world)
 		(*world)->display_rendered = true;
 		display_lock.unlock();
 		(*world)->display_condition.notify_all();
-		
+
 		if (intOpts[iDispQt]) break; else timer.wait();
 	}
-	
+
 JFR_GLOBAL_CATCH
 } // demo_slam_display
 
@@ -2233,7 +2233,7 @@ void ConfigSetup::processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile,
 	if (!read || intOpts[iGps])
 		KeyValueFile_processItem(GPS_POSE);
 	KeyValueFile_processItem(ROBOT_POSE);
-	
+
 	if (intOpts[iSimu])
 	{
 		try {
@@ -2284,7 +2284,7 @@ void ConfigSetup::processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile,
 			} else throw e;
 		}
 	}
-	
+
 	KeyValueFile_processItem(UNCERT_VLIN);
 	KeyValueFile_processItem(UNCERT_VANG);
 	KeyValueFile_processItem(PERT_VLIN);
@@ -2299,7 +2299,7 @@ void ConfigSetup::processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile,
 		KeyValueFile_processItem(ACCELERO_NOISE);
 		KeyValueFile_processItem(GYRO_FULLSCALE);
 		KeyValueFile_processItem(GYRO_NOISE);
-	
+
 		try { KeyValueFile_processItem(INITIAL_GRAVITY); }
 		catch(kernel::KernelException &e) { INITIAL_GRAVITY = 9.806; }
 		KeyValueFile_processItem(UNCERT_GRAVITY);
@@ -2315,12 +2315,12 @@ void ConfigSetup::processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile,
 	catch(kernel::KernelException &e) { INITIAL_HEADING = 0.0; }
 	KeyValueFile_processItem(UNCERT_HEADING);
 	KeyValueFile_processItem(UNCERT_ATTITUDE);
-	
+
 	if (!read || intOpts[iRobot] == 1)
 		KeyValueFile_processItem(IMU_TIMESTAMP_CORRECTION);
 	if (!read || intOpts[iGps])
 		KeyValueFile_processItem(GPS_TIMESTAMP_CORRECTION);
-	
+
 	if (!read || intOpts[iRobot] == 2)
 	{
 		KeyValueFile_processItem(dxNDR);
@@ -2371,19 +2371,19 @@ void ConfigEstimation::saveKeyValueFile(jafar::kernel::KeyValueFile& keyValueFil
 void ConfigEstimation::processKeyValueFile(jafar::kernel::KeyValueFile& keyValueFile, bool read)
 {
 	KeyValueFile_processItem(CORRECTION_SIZE);
-	
+
 	KeyValueFile_processItem(MAP_SIZE);
 	KeyValueFile_processItem(PIX_NOISE);
 	KeyValueFile_processItem(PIX_NOISE_SIMUFACTOR);
-	
+
 	KeyValueFile_processItem(D_MIN);
 	KeyValueFile_processItem(REPARAM_TH);
-	
+
 	KeyValueFile_processItem(GRID_HCELLS);
 	KeyValueFile_processItem(GRID_VCELLS);
 	KeyValueFile_processItem(GRID_MARGIN);
 	KeyValueFile_processItem(GRID_SEPAR);
-	
+
 	KeyValueFile_processItem(RELEVANCE_TH);
 	KeyValueFile_processItem(MAHALANOBIS_TH);
 	KeyValueFile_processItem(N_UPDATES_TOTAL);
@@ -2391,20 +2391,20 @@ void ConfigEstimation::processKeyValueFile(jafar::kernel::KeyValueFile& keyValue
 	KeyValueFile_processItem(N_INIT);
 	KeyValueFile_processItem(N_RECOMP_GAINS);
 	KeyValueFile_processItem(RANSAC_LOW_INNOV);
-	
+
 	KeyValueFile_processItem(RANSAC_NTRIES);
 	try { KeyValueFile_processItem(MULTIPLE_DEPTH_HYPOS); } catch (kernel::KernelException &e) { if (read) MULTIPLE_DEPTH_HYPOS = false; }
-	
+
 	KeyValueFile_processItem(HARRIS_CONV_SIZE);
 	KeyValueFile_processItem(HARRIS_TH);
 	KeyValueFile_processItem(HARRIS_EDDGE);
-	
+
 	KeyValueFile_processItem(DESC_SIZE);
 	KeyValueFile_processItem(MULTIVIEW_DESCRIPTOR);
 	KeyValueFile_processItem(DESC_SCALE_STEP);
 	KeyValueFile_processItem(DESC_ANGLE_STEP);
 	KeyValueFile_processItem(DESC_PREDICTION_TYPE);
-	
+
 	KeyValueFile_processItem(PATCH_SIZE);
 	KeyValueFile_processItem(MAX_SEARCH_SIZE);
 	KeyValueFile_processItem(KILL_SEARCH_SIZE);

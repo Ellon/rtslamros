@@ -37,7 +37,7 @@
 #include <tf/transform_listener.h>
 
 // Namespaces being used
-using namespace jafar::rtslamros;
+using namespace rtslamros;
 using namespace jafar::rtslam;
 using namespace jafar;
 
