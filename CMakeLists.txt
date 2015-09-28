@@ -16,7 +16,6 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   cv_bridge
   tf
-  vikit_common
   vikit_ros
 )
 
@@ -168,9 +167,9 @@ add_library(rtslamros_core
 )
 
 ## Declare a cpp executable
-add_executable(rtslamros_node src/rtslamros_node.cpp)
-add_executable(jafardemo_node src/jafardemo_node.cpp)
-add_executable(simplertslamros_node src/simplertslamros_node.cpp)
+# add_executable(rtslamros_node src/rtslamros_node.cpp)
+# add_executable(jafardemo_node src/jafardemo_node.cpp)
+# add_executable(simplertslamros_node src/simplertslamros_node.cpp)
 add_executable(monoinertial_node src/monoinertial_node.cpp)
 
 
@@ -179,33 +178,33 @@ add_executable(monoinertial_node src/monoinertial_node.cpp)
 # add_dependencies(rtslamros_node rtslamros_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(rtslamros_node
-  rtslamros_hardware
-  ${Jafar_LIBRARIES}
-  ${GDHE_LIBRARY}
-  ${OpenCV_LIBS}
-  ${QT_LIBRARIES}
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-)
+# target_link_libraries(rtslamros_node
+#   rtslamros_hardware
+#   ${Jafar_LIBRARIES}
+#   ${GDHE_LIBRARY}
+#   ${OpenCV_LIBS}
+#   ${QT_LIBRARIES}
+#   ${catkin_LIBRARIES}
+#   ${Boost_LIBRARIES}
+# )
 
-target_link_libraries(jafardemo_node
-  ${Jafar_LIBRARIES}
-  ${GDHE_LIBRARY}
-  ${QT_LIBRARIES}
-  ${OpenCV_LIBS}
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-)
+# target_link_libraries(jafardemo_node
+#   ${Jafar_LIBRARIES}
+#   ${GDHE_LIBRARY}
+#   ${QT_LIBRARIES}
+#   ${OpenCV_LIBS}
+#   ${catkin_LIBRARIES}
+#   ${Boost_LIBRARIES}
+# )
 
-target_link_libraries(simplertslamros_node
-  rtslamros_hardware
-  ${Jafar_LIBRARIES}
-  ${GDHE_LIBRARY}
-  ${QT_LIBRARIES}
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-)
+# target_link_libraries(simplertslamros_node
+#   rtslamros_hardware
+#   ${Jafar_LIBRARIES}
+#   ${GDHE_LIBRARY}
+#   ${QT_LIBRARIES}
+#   ${catkin_LIBRARIES}
+#   ${Boost_LIBRARIES}
+# )
 
 target_link_libraries(monoinertial_node
   rtslamros_core
