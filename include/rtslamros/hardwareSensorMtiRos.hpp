@@ -31,50 +31,24 @@ namespace hardware {
 class HardwareSensorMtiRos: public jafar::rtslam::hardware::HardwareSensorProprioAbstract
 {
 private:
-	ros::NodeHandle nh;
-	ros::CallbackQueue imu_callback_queue;
-
-	std::string dump_path;
-	double realFreq;
 	double last_timestamp;
-	jafar::kernel::LoggerTask *loggerTask;
-
-	boost::thread *preloadTask_thread;
-	void preloadTask(void);
-
 	unsigned mti_count;
-	double init_ts1, init_ts2;
 
-	void callback(const sensor_msgs::Imu& msg);
-
-	void init(double init_time);
+	virtual void start(){};
+	virtual void stop(){};
+	virtual bool join(int timed_ms = -1){};
 
 public:
-	/// Constructor when working online. Initialize MTI params from ROS topic
-	HardwareSensorMtiRos(jafar::kernel::VariableCondition<int> *condition, int bufferSize_, double init_time, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOnline,
-						 std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
-
-	/// Constructor when working offline.
-	HardwareSensorMtiRos(jafar::kernel::VariableCondition<int> *condition, double trigger_mode,
-						 double trigger_freq, double trigger_shutter, int bufferSize_, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOffline,
-						 std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
-
 	/// Simple Constructor
-	HardwareSensorMtiRos(jafar::kernel::VariableCondition<int> *condition, int bufferSize_, jafar::rtslam::hardware::Mode mode = jafar::rtslam::hardware::mOffline,
-						 std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
+	HardwareSensorMtiRos(jafar::kernel::VariableCondition<int> *condition, int bufferSize_, std::string dump_path = ".", jafar::kernel::LoggerTask *loggerTask = NULL);
 
-	~HardwareSensorMtiRos();
-	virtual void start();
-	virtual void stop();
-	virtual bool join(int timed_ms = -1);
+	virtual ~HardwareSensorMtiRos();
+
 	virtual double getLastTimestamp() { boost::unique_lock<boost::mutex> l(mutex_data); return last_timestamp; }
-	virtual void showInfos()
-	{
-		boost::unique_lock<boost::mutex> l(mutex_data);
-		double first = last_timestamp-mti_count*10e-3;
-		std::cout << "MTI: delay between " << (first-init_ts2)*1000 << " and " << (first-init_ts1)*1000 << " milliseconds." << std::endl;
-	}
+
 	void setSyncConfig(double timestamps_correction = 0.0/*, bool tightly_synchronized = false, double tight_offset*/);
+
+	void publicCallback(const sensor_msgs::ImuConstPtr& msg);
 
 	/**
 	 * @return data with 10 columns: time, accelero (3), gyro (3), magneto (3)
@@ -82,8 +56,9 @@ public:
 	jblas::ind_array instantValues() { return jafar::jmath::ublasExtra::ia_set(1,10); }
 	jblas::ind_array incrementValues() { return jafar::jmath::ublasExtra::ia_set(1,1); }
 
-	double getFreq() { return realFreq; } // trigger freq
 };
+
+typedef boost::shared_ptr<HardwareSensorMtiRos> hardware_sensor_mti_ros_ptr_t;
 
 }}
 
