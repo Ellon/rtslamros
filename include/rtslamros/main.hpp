@@ -728,12 +728,12 @@ bool demo_slam_init()
 	 // 1b. Create map manager.
 	landmark_factory_ptr_t pointLmkFactory;
 	landmark_factory_ptr_t segLmkFactory;
-#if SEGMENT_BASED
+	#if SEGMENT_BASED
 	 segLmkFactory.reset(new LandmarkFactory<LandmarkAnchoredHomogeneousPointsLine, LandmarkAnchoredHomogeneousPointsLine>());
-#endif
-#if SEGMENT_BASED != 1
+	#endif
+	#if SEGMENT_BASED != 1
 	 pointLmkFactory.reset(new LandmarkFactory<LandmarkAnchoredHomogeneousPoint, LandmarkEuclideanPoint>());
-#endif
+	#endif
 	map_manager_ptr_t mmPoint;
 	map_manager_ptr_t mmSeg;
 	const double gridDistInit = 0.5;
@@ -902,7 +902,7 @@ bool demo_slam_init()
 		case 10: case 100: {
 			boost::shared_ptr<RobotConstantMotionModel<0,0> > robPtr(new RobotConstantMotionModel<0,0>(mapPtr));
 			robPtr->setVelocityStd(configSetup.UNCERT_VLIN, configSetup.UNCERT_VANG); robPtr1 = robPtr; break; }
-//		case 0:
+	//		case 0:
 		case 11: case 111: {
 			boost::shared_ptr<RobotConstantMotionModel<1,1> > robPtr(new RobotConstantMotionModel<1,1>(mapPtr));
 			robPtr->setVelocityStd(configSetup.UNCERT_VLIN, configSetup.UNCERT_VANG); robPtr1 = robPtr; break; }
@@ -961,7 +961,7 @@ bool demo_slam_init()
 		hardware::hardware_sensorprop_ptr_t hardEst1;
 		if (intOpts[iSimu] != 0)
 		{
-/*			boost::shared_ptr<hardware::HardwareEstimatorInertialAdhocSimulator> hardEst1_(
+	/*			boost::shared_ptr<hardware::HardwareEstimatorInertialAdhocSimulator> hardEst1_(
 				new hardware::HardwareEstimatorInertialAdhocSimulator(configSetup.SIMU_IMU_FREQ, 50, simulator, robPtr1_->id()));
 			hardEst1_->setSyncConfig(configSetup.SIMU_IMU_TIMESTAMP_CORRECTION);
 
@@ -974,7 +974,7 @@ bool demo_slam_init()
 				configSetup.SIMU_IMU_RANDWALKACC_FACTOR * configSetup.PERT_RANWALKACC);
 
 			hardEst1 = hardEst1_;
-*/		} else
+	*/		} else
 		{
 		  /** CHANGE_HERE_TO_ROS
 		   */
@@ -994,7 +994,7 @@ bool demo_slam_init()
 	} else
 	if (intOpts[iRobot] == 2) // odometry
 	{
-/*		robodo_ptr_t robPtr1_(new RobotOdometry(mapPtr));
+	/*		robodo_ptr_t robPtr1_(new RobotOdometry(mapPtr));
 		std::cout<<"configSetup.dxNDR "<<configSetup.dxNDR<<std::endl;
 		std::cout<<"configSetup.dvNDR "<<configSetup.dvNDR<<std::endl;
 		double _v[6] = {configSetup.dxNDR, configSetup.dxNDR, configSetup.dxNDR,
@@ -1131,7 +1131,7 @@ bool demo_slam_init()
 
 	}
 
-//robPtr1->setPoseStd(0, 0, 0, 0, 0, 0, 20, 20, 20, 10, 10, 10, true);
+	//robPtr1->setPoseStd(0, 0, 0, 0, 0, 0, 20, 20, 20, 10, 10, 10, true);
 
 	/// ---------------------------------------------------------------------------
 	/// --- INIT SENSORS ----------------------------------------------------------
@@ -1140,7 +1140,7 @@ bool demo_slam_init()
 
 	/// pin-hole parameters in BOOST format
 	boost::shared_ptr<ObservationFactory> obsFact(new ObservationFactory());
-#if SEGMENT_BASED
+	#if SEGMENT_BASED
 	if (intOpts[iSimu] != 0)
 	{
 		obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeAhplSimuObservationMaker(
@@ -1150,8 +1150,8 @@ bool demo_slam_init()
 		obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeAhplObservationMaker(
 			configEstimation.REPARAM_TH, configEstimation.KILL_SEARCH_SIZE, 30, 0.5, 0.5, configEstimation.D_MIN, configEstimation.PATCH_SIZE)));
 	}
-#endif
-#if SEGMENT_BASED != 1
+	#endif
+	#if SEGMENT_BASED != 1
 	if (intOpts[iSimu] != 0)
 	{
 		obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeEucpSimuObservationMaker(
@@ -1165,7 +1165,7 @@ bool demo_slam_init()
 		obsFact->addMaker(boost::shared_ptr<ObservationMakerAbstract>(new PinholeAhpObservationMaker(
 		  configEstimation.D_MIN, configEstimation.PATCH_SIZE)));
 	}
-#endif
+	#endif
 
 	int ncam_built = 0;
 	pinhole_ptr_t cams_built[ncam];
@@ -1328,7 +1328,7 @@ bool demo_slam_init()
 					break;
 				}
 
-//				if (!(intOpts[iReplay] & 1)) hardSen11->assessFirstImage(trigger_construction_date);
+	//				if (!(intOpts[iReplay] & 1)) hardSen11->assessFirstImage(trigger_construction_date);
 				hardSen11->setTimingInfos(1.0/hardSen11->getFreq(), 1.0/hardSen11->getFreq());
 				hardSen11->setFilter(filter_div, filter_mods[c]);
 				senPtr11->setHardwareSensor(hardSen11);
@@ -1425,7 +1425,7 @@ bool demo_slam_init()
 		absloc_ptr_t senPtr14(new SensorAbsloc(robPtr1, (cp_size == 6 ? MapObject::UNFILTERED : MapObject::FILTERED), 3.0, 1e9, false, true, false));
 		senPtr14->linkToParentRobot(robPtr1);
 		senPtr14->name("odom");
-//		robPtr1->registerRobotQuantity(RobotAbstract::qAngVel);
+	//		robPtr1->registerRobotQuantity(RobotAbstract::qAngVel);
 		hardware::HardwareSensorOdomRmp400Genom *odomRmp = new hardware::HardwareSensorOdomRmp400Genom(&rawdata_condition, 200, mode, strOpts[sDataPath], loggerTask.get());
 		odomRmp->setCalib(configSetup.ODO_CALIB);
 		hardware::hardware_sensorprop_ptr_t hardOdom(odomRmp);
@@ -1524,15 +1524,15 @@ void demo_slam_exit(world_ptr_t *world, boost::thread *thread_main) {
 	(*world)->exit(true);
 	(*world)->display_condition.notify_all();
 
-#ifdef HAVE_MODULE_QDISPLAY
+	#ifdef HAVE_MODULE_QDISPLAY
 	if (intOpts[iDispQt])
 	{
 		viewerQt->runStatus.pause = 0;
 		viewerQt->runStatus.condition.notify_all();
 	}
-#endif
+	#endif
 
-// 	std::cout << "EXITING !!!" << std::endl;
+	std::cout << "EXITING !!!" << std::endl;
 	//fputc('\n', stdin);
 	thread_main->join();
 	//thread_main->timed_join(boost::posix_time::milliseconds(500));
@@ -1685,7 +1685,7 @@ void demo_slam_main(world_ptr_t *world)
 		worldPtr->display_rendered = false;
 		display_lock.unlock();
 		worldPtr->display_condition.notify_all();
-// std::cout << "SLAM: now waiting for this display to finish" << std::endl;
+	// std::cout << "SLAM: now waiting for this display to finish" << std::endl;
 		display_lock.lock();
 		while(!worldPtr->display_rendered) worldPtr->display_condition.wait(display_lock);
 		display_lock.unlock();
@@ -1819,7 +1819,7 @@ void demo_slam_main(world_ptr_t *world)
 
 				JFR_DEBUG("************** FRAME : " << (*world)->t << " (" << std::setprecision(16) << newt << std::setprecision(6) << ") sensor " << pinfo.sen->id());
 
-//std::cout << "Frame " << (*world)->t << " using sen " << pinfo.sen->id() << " at time " << std::setprecision(16) << newt << std::endl;
+	//std::cout << "Frame " << (*world)->t << " using sen " << pinfo.sen->id() << " at time " << std::setprecision(16) << newt << std::endl;
 
 				// wait to have all the estimator data (ie one after newt) to do this move,
 				// or it can cause trouble if there are two many missing data,
@@ -2005,10 +2005,10 @@ void demo_slam_main(world_ptr_t *world)
 	std::cout << "final_robot_position " << robPtr->state.x(0) << " " << robPtr->state.x(1) << " " << robPtr->state.x(2) << std::endl;
 
 	demo_slam_stop(world);
-//	std::cout << "\nFINISHED ! Press a key to terminate." << std::endl;
-//	getchar();
+	//	std::cout << "\nFINISHED ! Press a key to terminate." << std::endl;
+	//	getchar();
 
-JFR_GLOBAL_CATCH
+	JFR_GLOBAL_CATCH
 } // demo_slam_main
 
 
@@ -2028,7 +2028,7 @@ void demo_slam_display(world_ptr_t *world)
 		demo_slam_display_first = false;
 	}
 
-//	static unsigned prev_t = 0;
+	//	static unsigned prev_t = 0;
 	kernel::Timer timer(display_period*1000);
 	while(!(*world)->exit())
 	{
@@ -2068,7 +2068,7 @@ void demo_slam_display(world_ptr_t *world)
 		blocked_lock.unlock();
 
 		// waiting that display is ready
-// std::cout << "DISPLAY: waiting for data" << std::endl;
+	// std::cout << "DISPLAY: waiting for data" << std::endl;
 		boost::unique_lock<boost::mutex> display_lock((*world)->display_mutex);
 		if (intOpts[iDispQt] == 0)
 		{
@@ -2089,17 +2089,17 @@ void demo_slam_display(world_ptr_t *world)
 			#endif
 		}
 		display_lock.unlock();
-// std::cout << "DISPLAY: ok data here, let's start!" << std::endl;
+	// std::cout << "DISPLAY: ok data here, let's start!" << std::endl;
 
-//		if ((*world)->t != prev_t)
-//		{
-//			prev_t = (*world)->t;
-//			(*world)->display_rendered = (*world)->t;
+	//		if ((*world)->t != prev_t)
+	//		{
+	//			prev_t = (*world)->t;
+	//			(*world)->display_rendered = (*world)->t;
 
-//		!bufferize!
+	//		!bufferize!
 
-//			if (!intOpts[iRenderAll]) // strange: if we always unlock here, qt.dump takes much more time...
-//				(*world)->display_mutex.unlock();
+	//			if (!intOpts[iRenderAll]) // strange: if we always unlock here, qt.dump takes much more time...
+	//				(*world)->display_mutex.unlock();
 
 			#ifdef HAVE_MODULE_QDISPLAY
 			display::ViewerQt *viewerQt = NULL;
@@ -2128,15 +2128,15 @@ void demo_slam_display(world_ptr_t *world)
 					viewerGdhe->dump(oss.str());
 				}
 				#endif
-//				if (intOpts[iRenderAll])
-//					(*world)->display_mutex.unlock();
-			}
-//		} else
-//		{
-//			(*world)->display_mutex.unlock();
-//			boost::this_thread::yield();
-//		}
-// std::cout << "DISPLAY: finished display, marking rendered" << std::endl;
+	//				if (intOpts[iRenderAll])
+	//					(*world)->display_mutex.unlock();
+				}
+	//		} else
+	//		{
+	//			(*world)->display_mutex.unlock();
+	//			boost::this_thread::yield();
+	//		}
+	// std::cout << "DISPLAY: finished display, marking rendered" << std::endl;
 		display_lock.lock();
 		(*world)->display_rendered = true;
 		display_lock.unlock();
