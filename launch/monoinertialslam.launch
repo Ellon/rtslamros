@@ -14,7 +14,10 @@
     <!-- Default parameter settings: choose between vo_fast and vo_accurate -->
     <rosparam file="$(find rtslamros)/param/rtslam.yaml" />
     <rosparam file="$(find rtslamros)/param/setup.yaml" />
-        
+
+    <!-- Set 'use_sim_time' when running from bags -->
+    <param name="use_sim_time" type="bool" value="true" />
+
     <!-- Initial camera orientation, make it point downwards -->
     <!-- <param name="init_rx" value="3.14" /> -->
     <!-- <param name="init_ry" value="0.00" /> -->
