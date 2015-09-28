@@ -33,22 +33,25 @@ MonoInertialNode::MonoInertialNode() :
 {
 
   slam_ = new rtslamros::MonoInertialSlam();
-  // slam_->start();
+  slam_->start();
 }
 
 MonoInertialNode::~MonoInertialNode()
 {
+  slam_->stop();
   delete slam_;
-}
-
-void MonoInertialNode::imgCb(const sensor_msgs::ImageConstPtr& msg)
-{
-  ROS_INFO("Received image %d", msg->header.seq);
 }
 
 void MonoInertialNode::imuCb(const sensor_msgs::ImuConstPtr& msg)
 {
-  ROS_INFO("Received imu data %d", msg->header.seq);
+  // ROS_INFO("Received imu data %d", msg->header.seq);
+  slam_->imuHardware()->publicCallback(msg);
+}
+
+void MonoInertialNode::imgCb(const sensor_msgs::ImageConstPtr& msg)
+{
+  // ROS_INFO("Received image %d", msg->header.seq);
+  slam_->cameraHardware()->publicCallback(msg);
 }
 
 void MonoInertialNode::processUserActions()

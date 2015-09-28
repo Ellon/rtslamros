@@ -13,9 +13,6 @@
 
 #include <rtslamros/configEstimation.hpp>
 #include <rtslamros/configMonoInertial.hpp>
-#include <rtslamros/hardwareSensorMtiRos.hpp>
-#include <rtslamros/hardwareSensorCameraRos.hpp>
-
 
 namespace rtslamros {
 
@@ -49,7 +46,17 @@ MonoInertialSlam::MonoInertialSlam() :
 	// 3.1) create landmark factory
 	landmark_factory_ptr_t pointLmkFactory(new LandmarkFactory<LandmarkAnchoredHomogeneousPoint, LandmarkEuclideanPoint>());
 	// 3.2) create the map manager and add to map
-	double min_cell_fov = computeMinCelFov();
+
+	// compute min_cell_fov, min over all camera sensors
+	double cell_fov, min_cell_fov = 1e10;
+	cell_fov = 2. * atan(ConfigMonoInertial::cameraImgWidth() / (2. * ConfigMonoInertial::cameraIntrinsic()(2))) / ConfigEstimation::gridHcells();
+	if (cell_fov < min_cell_fov) min_cell_fov = cell_fov;
+	cell_fov = 2. * atan(ConfigMonoInertial::cameraImgHeight() / (2. * ConfigMonoInertial::cameraIntrinsic()(3))) / ConfigEstimation::gridVcells();
+	if (cell_fov < min_cell_fov) min_cell_fov = cell_fov;
+
+	min_cell_fov /= 2.; // security factor
+	min_cell_fov *= 180./M_PI;
+
 	map_manager_ptr_t mmPoint(new MapManagerOdometry(pointLmkFactory, ConfigEstimation::reparamTh(), ConfigEstimation::killSearchSize(),
 					min_cell_fov, gridDistInit, gridDistFactor, gridNDist, gridPhiFactor));
 	mmPoint->linkToParentMap(mapPtr);
@@ -73,10 +80,9 @@ MonoInertialSlam::MonoInertialSlam() :
 	robPtr1->perturbation.set_std_continuous(pertStd);
 	// or robPtr1->perturbation.set_std_continuous(ublas::subrange(pertStd,0,6));
 	// 4.2) set robot hardware (the IMU)
-	boost::shared_ptr<rtslamros::hardware::HardwareSensorMtiRos> hardEst1(new rtslamros::hardware::HardwareSensorMtiRos(
-				&imudata_condition, 1024));
-	hardEst1->setSyncConfig(ConfigMonoInertial::imuTimestampCorrection());
-	robPtr1->setHardwareEstimator(hardEst1);
+	imuHardware_.reset(new rtslamros::hardware::HardwareSensorMtiRos(&imudata_condition, 1024));
+	imuHardware_->setSyncConfig(ConfigMonoInertial::imuTimestampCorrection());
+	robPtr1->setHardwareEstimator(imuHardware_);
 	robPtr1->linkToParentMap(mapPtr);
 
 	robPtr1->setRobotPose(ublas::subrange(ConfigMonoInertial::robotPose(),0,6), true);
@@ -120,33 +126,154 @@ MonoInertialSlam::MonoInertialSlam() :
 	dmPt11->setObservationFactory(obsFact);
 
 	// 5.4) Create camera hardware
-	rtslamros::hardware::hardware_sensor_camera_ros_ptr_t hardSen11;
-	hardSen11 = rtslamros::hardware::hardware_sensor_camera_ros_ptr_t(new rtslamros::hardware::HardwareSensorCameraRos(&imagedata_condition,
+	cameraHardware_.reset(new rtslamros::hardware::HardwareSensorCameraRos(&imagedata_condition,
 		                                                                                                               1, // camera ID
 		                                                                                                               cv::Size(ConfigMonoInertial::cameraImgWidth(), ConfigMonoInertial::cameraImgHeight()), // image size
-		                                                                                                               500)); // buffer size
-	hardSen11->setTimingInfos(1.0/hardSen11->getFreq(), 1.0/hardSen11->getFreq());
-	// hardSen11->setFilter(filter_div, filter_mods[c]);
-	senPtr11->setHardwareSensor(hardSen11);
+		                                                                                                               500)); // buffer size)
 
-	sensorManager.reset(new SensorManagerOnline(mapPtr));
+	cameraHardware_->setTimingInfos(1.0/cameraHardware_->getFreq(), // data_period
+	                                1.0/cameraHardware_->getFreq()); //arrival_delay
+	// hardSen11->setFilter(filter_div, filter_mods[c]);
+	senPtr11->setHardwareSensor(cameraHardware_);
+
+	sensorManager_.reset(new SensorManagerOnline(mapPtr));
 	// or maybe use the offline?
 	// or maybe do not use at all?
 }
 
-double MonoInertialSlam::computeMinCelFov()
+void MonoInertialSlam::main()
 {
-	// compute min_cell_fov, min over all camera sensors
-	double cell_fov, min_cell_fov = 1e10;
-	cell_fov = 2. * atan(ConfigMonoInertial::cameraImgWidth() / (2. * ConfigMonoInertial::cameraIntrinsic()(2))) / ConfigEstimation::gridHcells();
-	if (cell_fov < min_cell_fov) min_cell_fov = cell_fov;
-	cell_fov = 2. * atan(ConfigMonoInertial::cameraImgHeight() / (2. * ConfigMonoInertial::cameraIntrinsic()(3))) / ConfigEstimation::gridVcells();
-	if (cell_fov < min_cell_fov) min_cell_fov = cell_fov;
+	using namespace jafar;
+	using namespace jafar::rtslam;
+	using namespace boost;
 
-	min_cell_fov /= 2.; // security factor
-	min_cell_fov *= 180./M_PI;
+	robot_ptr_t robotPtr;
 
-	return min_cell_fov;
+
+	// start hardware sensors that need long init
+	// wait for their init
+	while(!imuHardware_->initialized() || !cameraHardware_->initialized())
+	{
+		ROS_INFO("No data being published.");
+		// sleep(1);
+		ros::Duration(0.5).sleep();
+	}
+
+	// Sleep sometime here tu buffer some IMU data before setting the start date in the sensor manager.
+	std::cout << "Sensors are calibrating... DON'T MOVE THE SYSTEM!!" << std::flush;
+	// sleep(2);
+	ros::Duration(2.0).sleep();
+	std::cout << " done." << std::endl;
+
+	// set the start date
+	double start_date = ros::Time::now().toSec();
+	sensorManager_->setStartDate(start_date);
+
+	// ---------------------------------------------------------------------------
+	// --- LOOP ------------------------------------------------------------------
+	// ---------------------------------------------------------------------------
+	// INIT : complete observations set
+	// loop all sensors
+	// loop all lmks
+	// create sen--lmk observation
+	// Temporal loop
+	//if (dataLogger) dataLogger->log();
+	double filterTime = 0.0;
+	kernel::Chrono chrono;
+	double next_show_infos = -1;
+	bool ready = false;
+	while (!worldPtr_->exit())
+	{
+		ROS_INFO("Entered main loop...");
+
+		bool had_data = false;
+		chrono.reset();
+
+		SensorManagerAbstract::ProcessInfo pinfo = sensorManager_->getNextDataToUse(filterTime);
+		bool no_more_data = pinfo.no_more_data;
+
+		if (pinfo.sen)
+		{
+			ROS_INFO("Processing new image...");
+			had_data = true;
+			robot_ptr_t robPtr = pinfo.sen->robotPtr();
+			{
+				double newt = pinfo.date;
+
+				bool waited = false;
+				double wait_time;
+				imudata_condition.set(0);
+				double start_date = ros::Time::now().toSec();
+				double waitedmove_date = start_date;
+				while (!robPtr->move(newt))
+				{
+					if (!waited) wait_time = ros::Time::now().toSec();
+					waited = true;
+					imudata_condition.wait(boost::lambda::_1 != 0);
+					imudata_condition.set(0);
+					waitedmove_date = ros::Time::now().toSec();
+					ROS_INFO("Waiting for IMU...");
+				}
+				double moved_date = ros::Time::now().toSec();
+				if (waited)
+				{
+					wait_time = ros::Time::now().toSec() - wait_time;
+					/*if (wait_time > 0.001)*/ std::cout << "wa(i|s)ted " << wait_time << " for estimator data" << std::endl;
+				}
+
+
+				if (!ready)
+				{ // here to ensure that at least one move has been done (to init estimator)
+					robPtr->reinit_extrapolate();
+					ready = true;
+				}
+
+				// pinfo.sen->process(pinfo.id, pinfo.date_next);
+				pinfo.sen->process(pinfo.id, -1.);
+				ROS_INFO("Processed Data.");
+
+				pinfo.sen->robotPtr()->last_updated = pinfo.sen;
+
+				robPtr->reinit_extrapolate();
+				double processed_date = ros::Time::now().toSec();
+
+			}
+			filterTime = robPtr->self_time;
+		}
+
+		if (!had_data)
+		{
+			if (pinfo.date_next < 0) imagedata_condition.wait(boost::lambda::_1 != 0); else
+				imagedata_condition.timed_wait(boost::lambda::_1 != 0, boost::posix_time::microseconds((pinfo.date_next-ros::Time::now().toSec())*1e6));
+		}
+		imagedata_condition.set(0);
+
+		if (had_data)
+		{
+			worldPtr_->t++;
+		}
+	} // temporal loop
+
+	std::cout << "Stopping RT-SLAM" << std::endl;
+	robot_ptr_t robPtr = worldPtr_->mapList().front()->robotList().front();
+	std::cout << "final_robot_position " << robPtr->state.x(0) << " " << robPtr->state.x(1) << " " << robPtr->state.x(2) << std::endl;
+
+	sensorManager_->stop();
+
+}
+
+void MonoInertialSlam::start()
+{
+
+	rtslam_main_thread_ = new boost::thread( boost::bind(&MonoInertialSlam::main, this) );
+
+}
+
+void MonoInertialSlam::stop()
+{
+	worldPtr_->exit(true);
+	rtslam_main_thread_->join();
+
 }
 
 } // namespace rtslamros
